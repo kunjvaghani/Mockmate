@@ -31,7 +31,19 @@ interface Interview {
     jobRole: string;
     jobExperience: string;
     createdAt: string;
+    ended?: boolean;
+    feedbackJson?: string | null;
     messages?: { id: string; aiRating?: number | null }[];
+}
+
+function getFeedbackScore(interview: Interview): number | null {
+    if (!interview.feedbackJson) return null;
+    try {
+        const parsed = JSON.parse(interview.feedbackJson);
+        return parsed.overallScore ?? null;
+    } catch {
+        return null;
+    }
 }
 
 type SidebarTab = "interviews" | "feedbacks" | "analysis" | "settings";
@@ -113,8 +125,8 @@ export default function UserDashboardPage() {
                                     key={item.key}
                                     onClick={() => setActiveTab(item.key)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group ${isActive
-                                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200"
-                                            : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
+                                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-200"
+                                        : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
                                         }`}
                                 >
                                     <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-slate-400 group-hover:text-indigo-600"}`} />
@@ -222,17 +234,31 @@ function InterviewsPanel({ interviews, loading }: { interviews: Interview[]; loa
                                         </Badge>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 shrink-0">
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {(() => {
+                                        const score = getFeedbackScore(interview);
+                                        return score !== null ? (
+                                            <Badge className={`text-xs border-0 ${score >= 70 ? 'bg-emerald-50 text-emerald-700' :
+                                                    score >= 40 ? 'bg-amber-50 text-amber-700' :
+                                                        'bg-red-50 text-red-700'
+                                                }`}>
+                                                <Star className="h-3 w-3 mr-1" />
+                                                {score}%
+                                            </Badge>
+                                        ) : null;
+                                    })()}
                                     <Link href={`/interview/${interview.id}/feedback`}>
                                         <Button variant="outline" size="sm" className="text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
                                             Feedback
                                         </Button>
                                     </Link>
-                                    <Link href={`/interview/${interview.id}`}>
-                                        <Button size="icon" className="h-8 w-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-                                            <ArrowRight className="h-3.5 w-3.5" />
-                                        </Button>
-                                    </Link>
+                                    {!interview.ended && (
+                                        <Link href={`/interview/${interview.id}`}>
+                                            <Button size="icon" className="h-8 w-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+                                                <ArrowRight className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -289,6 +315,18 @@ function FeedbacksPanel({ interviews, loading }: { interviews: Interview[]; load
                                             {new Date(interview.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                         </span>
                                     </div>
+                                    {(() => {
+                                        const score = getFeedbackScore(interview);
+                                        return score !== null ? (
+                                            <Badge className={`text-xs border-0 ${score >= 70 ? 'bg-emerald-50 text-emerald-700' :
+                                                    score >= 40 ? 'bg-amber-50 text-amber-700' :
+                                                        'bg-red-50 text-red-700'
+                                                }`}>
+                                                <Star className="h-3 w-3 mr-1" />
+                                                {score}%
+                                            </Badge>
+                                        ) : null;
+                                    })()}
                                     <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-indigo-500 transition-colors" />
                                 </CardContent>
                             </Card>

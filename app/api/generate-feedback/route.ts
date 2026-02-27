@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
 
         // If feedback already exists, return it immediately
         if (interview.feedbackJson) {
+            console.log("FeedBack already foounded")
             try {
                 const parsedFeedback = JSON.parse(interview.feedbackJson);
                 return NextResponse.json({ feedback: parsedFeedback });

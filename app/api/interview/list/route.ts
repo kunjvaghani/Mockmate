@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
                 jobRole: true,
                 jobExperience: true,
                 createdAt: true,
+                ended: true,
+                feedbackJson: true,
             },
         });
 

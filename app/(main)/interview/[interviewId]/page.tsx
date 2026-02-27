@@ -157,9 +157,16 @@ export default function InterviewRoomPage() {
         await generateQuestion(answer);
     };
 
-    const handleEndInterview = () => {
+    const handleEndInterview = async () => {
         stopSpeaking();
         if (listening) stopListening();
+        try {
+            await fetch(`/api/interview/${interviewId}/end`, {
+                method: "POST",
+            });
+        } catch (err) {
+            console.error("Failed to end interview:", err);
+        }
         router.push(`/interview/${interviewId}/feedback`);
     };
 

@@ -15,6 +15,7 @@ import {
     Briefcase,
     Sparkles,
     Hand,
+    Star,
 } from "lucide-react";
 
 interface Interview {
@@ -22,6 +23,18 @@ interface Interview {
     jobRole: string;
     jobExperience: string;
     createdAt: string;
+    ended?: boolean;
+    feedbackJson?: string | null;
+}
+
+function getFeedbackScore(interview: Interview): number | null {
+    if (!interview.feedbackJson) return null;
+    try {
+        const parsed = JSON.parse(interview.feedbackJson);
+        return parsed.overallScore ?? null;
+    } catch {
+        return null;
+    }
 }
 
 export default function DashboardPage() {
@@ -134,16 +147,30 @@ export default function DashboardPage() {
                                             className="w-full text-sm border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                                         >
                                             View Feedback
+                                            {(() => {
+                                                const score = getFeedbackScore(interview);
+                                                return score !== null ? (
+                                                    <Badge className={`ml-2 text-xs border-0 ${score >= 70 ? 'bg-emerald-50 text-emerald-700' :
+                                                            score >= 40 ? 'bg-amber-50 text-amber-700' :
+                                                                'bg-red-50 text-red-700'
+                                                        }`}>
+                                                        <Star className="h-3 w-3 mr-0.5" />
+                                                        {score}%
+                                                    </Badge>
+                                                ) : null;
+                                            })()}
                                         </Button>
                                     </Link>
-                                    <Link href={`/interview/${interview.id}`}>
-                                        <Button
-                                            size="icon"
-                                            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                                        >
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Button>
-                                    </Link>
+                                    {!interview.ended && (
+                                        <Link href={`/interview/${interview.id}`}>
+                                            <Button
+                                                size="icon"
+                                                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                                            >
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Button>
+                                        </Link>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

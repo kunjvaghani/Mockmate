@@ -15,6 +15,7 @@ model MockInterview {
   jobExperience String
   createdAt     DateTime     @default(now())
   feedbackJson  String?      @db.String
+  ended         Boolean      @default(false)
   messages      UserAnswer[]
 }
 

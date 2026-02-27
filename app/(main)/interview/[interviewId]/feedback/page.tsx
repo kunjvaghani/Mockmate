@@ -158,7 +158,7 @@ export default function FeedbackPage() {
                 <Card className="rounded-2xl border-0 shadow-md">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                            <ThumbsUp className="h-5 w-5 text-green-500" />
+                            <ThumbsUp className="h-5 w-5 text-green-600" />
                             Strengths
                         </CardTitle>
                     </CardHeader>
@@ -180,7 +180,7 @@ export default function FeedbackPage() {
                 <Card className="rounded-2xl border-0 shadow-md">
                     <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-500" />
+                            <AlertTriangle className="h-5 w-5 text-amber-600" />
                             Areas for Improvement
                         </CardTitle>
                     </CardHeader>

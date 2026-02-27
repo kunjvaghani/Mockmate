@@ -14,6 +14,7 @@ import {
     ArrowRight,
     Briefcase,
     Sparkles,
+    Hand,
 } from "lucide-react";
 
 interface Interview {
@@ -54,8 +55,8 @@ export default function DashboardPage() {
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full blur-3xl" />
                 </div>
                 <div className="relative">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                        Welcome back, {user?.firstName || "there"}! 👋
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2 flex items-center gap-2">
+                        Welcome back, {user?.firstName || "there"}! <Hand className="h-7 w-7 text-yellow-300" />
                     </h1>
                     <p className="text-indigo-100 text-base">
                         Ready to practice? Start a new interview or review your past sessions.

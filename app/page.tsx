@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -6,6 +9,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BrainCircuit, Mic, BarChart3, ArrowRight, Sparkles, Zap, Shield } from "lucide-react";
 
 export default function LandingPage() {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.2 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -129,7 +149,13 @@ export default function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid md:grid-cols-3 gap-12"
+          >
             {[
               {
                 step: "01",
@@ -150,7 +176,7 @@ export default function LandingPage() {
                 description: "Receive a detailed score breakdown, ideal answers for each question, and personalized improvement tips.",
               },
             ].map((item, i) => (
-              <div key={item.step} className="relative text-center">
+              <motion.div key={item.step} variants={itemVariants} className="relative text-center">
                 <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-xl font-bold mb-6 shadow-lg shadow-indigo-200">
                   {item.step}
                 </div>
@@ -159,9 +185,9 @@ export default function LandingPage() {
                 {i < 2 && (
                   <div className="hidden md:block absolute top-8 left-[calc(100%_-_16px)] w-[calc(100%_-_64px)] border-t-2 border-dashed border-indigo-200" />
                 )}
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 

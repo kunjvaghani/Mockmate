@@ -53,7 +53,7 @@ export default function RadarChartComponent({ scores }: RadarChartComponentProps
                             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                             padding: "8px 12px",
                         }}
-                        formatter={(value: number) => [`${value}%`, "Score"]}
+                        formatter={(value: any) => [`${value}%`, "Score"]}
                     />
                     <Radar
                         name="Performance"

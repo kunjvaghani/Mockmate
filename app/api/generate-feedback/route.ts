@@ -34,6 +34,17 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
+        // If feedback already exists, return it immediately
+        if (interview.feedbackJson) {
+            try {
+                const parsedFeedback = JSON.parse(interview.feedbackJson);
+                return NextResponse.json({ feedback: parsedFeedback });
+            } catch (err) {
+                console.error("Failed to parse cached feedback JSON:", err);
+                // Fallback to generating new feedback if parsing fails
+            }
+        }
+
         // Build transcript for evaluation
         const transcript = interview.messages.map((msg) => ({
             question: msg.question,
@@ -103,6 +114,14 @@ export async function POST(req: NextRequest) {
                 }
             }
         }
+
+        // Store generated feedback in database
+        await prisma.mockInterview.update({
+            where: { id: interviewId },
+            data: {
+                feedbackJson: JSON.stringify(feedbackJson)
+            }
+        });
 
         return NextResponse.json({ feedback: feedbackJson });
     } catch (error) {

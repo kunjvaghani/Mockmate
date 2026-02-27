@@ -13,7 +13,7 @@ export async function generateNextQuestion(
     newUserAnswer: string
 ): Promise<string> {
     const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: process.env.GEMINI_MODEL!,
         generationConfig: {
             maxOutputTokens: 300,
             temperature: 0.7,
@@ -42,10 +42,11 @@ export async function generateNextQuestion(
 
 export async function generateFeedback(feedbackPrompt: string): Promise<string> {
     const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: process.env.GEMINI_MODEL!,
         generationConfig: {
-            maxOutputTokens: 2000,
+            maxOutputTokens: 8192,
             temperature: 0.3,
+            responseMimeType: "application/json",
         },
     });
 

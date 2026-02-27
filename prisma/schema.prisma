@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model MockInterview {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String
+  jobRole       String
+  jobDesc       String
+  jobExperience String
+  createdAt     DateTime     @default(now())
+  messages      UserAnswer[]
+}
+
+model UserAnswer {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  mockInterviewId  String        @db.ObjectId
+  mockInterview    MockInterview  @relation(fields: [mockInterviewId], references: [id])
+  question         String
+  userAnswer       String?
+  aiFeedback       String?
+  aiRating         Int?
+  createdAt        DateTime      @default(now())
+}

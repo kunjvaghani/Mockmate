@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+MockMate_Blueprint.docx
+/lib/generated/prisma

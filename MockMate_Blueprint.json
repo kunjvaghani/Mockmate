@@ -1,0 +1,488 @@
+{
+  "project": "MockMate",
+  "subtitle": "AI-Powered Interview Simulator",
+  "description": "End-to-End Technical Blueprint — From Architecture to Deployment",
+  "stack_summary": "Next.js 14 | Gemini 1.5 Flash | Firebase | Prisma | Vercel",
+
+  "sections": [
+    {
+      "id": 1,
+      "title": "Project Overview & Goals",
+      "description": "MockMate is a full-stack, AI-powered interview simulation platform. Users configure a mock interview session based on their target job role and experience level, then speak their answers aloud while the AI dynamically generates follow-up questions, evaluates responses, and delivers structured feedback.",
+      "core_mission": "Give developers a realistic, repeatable interview practice experience powered by a context-aware LLM — accessible from any browser, free at its core, and deployable in 14 days.",
+      "key_features": [
+        "AI-driven multi-turn conversation (stateful context engine)",
+        "Real-time voice input (Speech-to-Text) and AI voice output (Text-to-Speech)",
+        "Webcam integration for psychological 'real interview' feel",
+        "Per-session database persistence (questions, answers, feedback)",
+        "Post-interview analytics: radar chart, per-question breakdown, overall score",
+        "Secure auth, route protection, and user-scoped data"
+      ],
+      "guiding_principles": [
+        "Core Logic First: The AI conversation engine is built and tested before any UI polish",
+        "No Resume Fluff: Every tech choice serves a function, not just a buzzword",
+        "Speed: Use managed services (Firebase, Clerk, Vercel) to eliminate DevOps overhead",
+        "Security: Users never access another user's interview data"
+      ]
+    },
+
+    {
+      "id": 2,
+      "title": "Technology Stack (Definitive)",
+      "description": "Every tool below was chosen for a specific reason. Do not substitute without understanding the trade-off.",
+      "stack": [
+        { "layer": "Frontend + Backend", "technology": "Next.js 14 (App Router)", "reason": "Single repo for UI and API routes. No separate Express server needed." },
+        { "layer": "Database", "technology": "Firebase (Firestore)", "reason": "Free tier, real-time capable, no self-managed Postgres server required." },
+        { "layer": "ORM / DB Client", "technology": "Prisma", "reason": "Type-safe JS queries, schema-as-code, easy migrations." },
+        { "layer": "LLM Brain", "technology": "Google Gemini 1.5 Flash", "reason": "Free within quota, low latency (~0.5s), 1M token context window." },
+        { "layer": "Authentication", "technology": "Clerk", "reason": "Pre-built login/signup UI for Next.js; handles Google OAuth and session management." },
+        { "layer": "Voice Input (STT)", "technology": "React Speech Recognition (wraps Web Speech API)", "reason": "Browser-native, no cost, no third-party latency." },
+        { "layer": "Voice Output (TTS)", "technology": "window.speechSynthesis", "reason": "Browser-native, no API key, works on all modern browsers." },
+        { "layer": "Webcam", "technology": "react-webcam", "reason": "Simple React wrapper for getUserMedia." },
+        { "layer": "Charts", "technology": "Recharts", "reason": "Lightweight, composable React chart library (RadarChart, BarChart)." },
+        { "layer": "UI Components", "technology": "Shadcn/UI + Tailwind CSS", "reason": "Professional pre-built components; avoids design from scratch." },
+        { "layer": "Deployment", "technology": "Vercel", "reason": "Zero-config Next.js deployment, free hobby tier, automatic HTTPS." }
+      ]
+    },
+
+    {
+      "id": 3,
+      "title": "System Architecture",
+      "subsections": {
+        "data_flow": {
+          "title": "High-Level Data Flow (One Full Interview Turn)",
+          "steps": [
+            "User speaks answer → Browser Web Speech API captures audio → transcribes to text string.",
+            "Frontend stores text in React state (userAnswer). User clicks 'Submit Answer'.",
+            "Frontend calls POST /api/generate-question with { interviewId, userAnswer }.",
+            "API Route: Queries Firebase for last N messages in this session.",
+            "API Route: Constructs full prompt = System Prompt + Chat History + New User Answer.",
+            "API Route: Sends prompt to Gemini 1.5 Flash via Google Generative AI SDK.",
+            "Gemini returns next question as text. API saves Question+Answer pair to Firebase.",
+            "API returns { question } to frontend. Frontend uses window.speechSynthesis to speak it aloud.",
+            "Process repeats until question count reaches limit (e.g., 5 questions)."
+          ]
+        },
+        "statelessness_problem": {
+          "title": "Statelessness & the Memory Problem",
+          "critical_concept": "Gemini (and all LLMs) are stateless. Each API call is independent — the model has zero memory of previous calls. To simulate a continuous conversation, you must manually attach the entire conversation history to every single API request. This is the core engineering challenge of the project."
+        },
+        "database_schema": {
+          "title": "Prisma Database Schema",
+          "models": [
+            {
+              "name": "MockInterview",
+              "fields": [
+                { "name": "id", "type": "String", "default": "uuid()", "note": "Primary key" },
+                { "name": "userId", "type": "String", "note": "Clerk user ID" },
+                { "name": "jobRole", "type": "String", "note": "e.g. Full Stack Developer" },
+                { "name": "jobDesc", "type": "String", "note": "Pasted job description text" },
+                { "name": "jobExperience", "type": "String", "note": "e.g. 2 years" },
+                { "name": "createdAt", "type": "DateTime", "default": "now()" },
+                { "name": "messages", "type": "UserAnswer[]", "note": "One-to-many relation" }
+              ]
+            },
+            {
+              "name": "UserAnswer",
+              "fields": [
+                { "name": "id", "type": "String", "default": "uuid()", "note": "Primary key" },
+                { "name": "mockInterviewId", "type": "String", "note": "Foreign key to MockInterview" },
+                { "name": "question", "type": "String", "note": "What the AI asked" },
+                { "name": "userAnswer", "type": "String", "note": "What the user said (transcribed)" },
+                { "name": "aiFeedback", "type": "String?", "note": "Post-interview AI feedback for this Q" },
+                { "name": "aiRating", "type": "Int?", "note": "Rating 1-10 for this specific answer" },
+                { "name": "createdAt", "type": "DateTime", "default": "now()" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": 4,
+      "title": "The AI Brain — Core Logic Deep Dive",
+      "description": "This is the most important section. Build this correctly and everything else is just UI wiring.",
+      "subsections": {
+        "system_prompt": {
+          "title": "The System Prompt (Interviewer Personality)",
+          "description": "The System Prompt is sent ONCE at the beginning of the Gemini chat session. It defines who the AI is, how it behaves, and what rules it must follow.",
+          "template": "You are an expert senior technical interviewer conducting a mock interview.\nThe candidate is applying for: {jobRole}\nYears of experience claimed: {experience}\nJob Description context: {jobDesc}\n\nYOUR RULES:\n1. Ask exactly ONE question per turn.\n2. Start with a warm-up, then increase difficulty.\n3. If the answer is vague, ask ONE targeted follow-up.\n4. Do NOT reveal answers. Probe deeper instead.\n5. Cover: Core Concepts, System Design, Problem Solving, Past Experience, Cultural Fit.\n6. Keep questions relevant to the job description.\n7. Be professional, concise, and encouraging.\n8. After 5 exchanges, respond ONLY with: [INTERVIEW_COMPLETE]",
+          "file": "lib/prompts.ts"
+        },
+        "context_builder": {
+          "title": "The Context Builder",
+          "description": "Before every Gemini API call, reconstruct the full conversation from the database and format it into the structure Gemini expects.",
+          "file": "lib/gemini.ts",
+          "function": "generateNextQuestion",
+          "parameters": [
+            { "name": "systemPrompt", "type": "string" },
+            { "name": "chatHistory", "type": "Message[]", "note": "Full history from DB" },
+            { "name": "newUserAnswer", "type": "string", "note": "Latest user answer" }
+          ],
+          "returns": "string (next AI question)",
+          "config": {
+            "model": "gemini-1.5-flash",
+            "maxOutputTokens": 300,
+            "temperature": 0.7
+          }
+        },
+        "api_route_generate_question": {
+          "title": "API Route: /api/generate-question",
+          "method": "POST",
+          "file": "app/api/generate-question/route.ts",
+          "input": { "interviewId": "string", "userAnswer": "string" },
+          "output": { "question": "string | null", "isComplete": "boolean" },
+          "steps": [
+            "Verify Clerk auth — return 401 if unauthenticated",
+            "Fetch MockInterview record with all messages ordered by createdAt ASC",
+            "Build system prompt using buildSystemPrompt()",
+            "Format chatHistory as Gemini Message[] (model/user role pairs)",
+            "Call generateNextQuestion() with full context",
+            "Check if response contains [INTERVIEW_COMPLETE]",
+            "Persist Q&A pair to UserAnswer table",
+            "Return { question, isComplete }"
+          ]
+        },
+        "feedback_engine": {
+          "title": "The Feedback Engine",
+          "description": "After interview ends, send full transcript to Gemini with evaluation prompt. Requests structured JSON feedback.",
+          "file": "app/api/generate-feedback/route.ts",
+          "method": "POST",
+          "input": { "interviewId": "string" },
+          "output_schema": {
+            "overallScore": "number (1-10)",
+            "overallSummary": "string",
+            "strengths": "string[]",
+            "areasForImprovement": "string[]",
+            "radarScores": {
+              "technicalAccuracy": "number (0-100)",
+              "communication": "number (0-100)",
+              "problemSolving": "number (0-100)",
+              "experienceDepth": "number (0-100)",
+              "confidence": "number (0-100)"
+            },
+            "questionFeedback": [
+              {
+                "question": "string",
+                "userAnswer": "string",
+                "idealAnswer": "string",
+                "rating": "number (1-10)",
+                "feedback": "string"
+              }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 5,
+      "title": "Voice Integration (STT + TTS)",
+      "description": "Voice makes MockMate feel like a real interview. Use browser-native APIs — no third-party voice service needed.",
+      "subsections": {
+        "speech_to_text": {
+          "title": "Speech-to-Text Hook",
+          "file": "hooks/useSpeechInput.ts",
+          "library": "react-speech-recognition",
+          "exports": ["transcript", "listening", "startListening", "stopListening", "browserSupportsSpeechRecognition"],
+          "config": { "continuous": true, "language": "en-US" }
+        },
+        "text_to_speech": {
+          "title": "Text-to-Speech Utility",
+          "file": "lib/tts.ts",
+          "api": "window.speechSynthesis",
+          "config": { "rate": 0.95, "pitch": 1.0, "volume": 1.0 },
+          "preferred_voice": "Google UK English Male (fallback: any en-US local voice)"
+        },
+        "critical_ux_pattern": "The flow must be: AI speaks question → onEnd callback fires → mic activates automatically. NEVER activate mic while AI is speaking — you will capture the AI's own voice as user input."
+      }
+    },
+
+    {
+      "id": 6,
+      "title": "UI/UX Design Specification",
+      "design_system": {
+        "primary_color": "#4F46E5 (Indigo)",
+        "background": "#F1F5F9 (Light Gray) / #FFFFFF (Cards)",
+        "text_primary": "#1E293B (Slate)",
+        "text_secondary": "#475569 (Gray)",
+        "font": "Inter (Google Fonts)",
+        "border_radius": "rounded-xl (12px) for cards, rounded-full for buttons",
+        "component_library": "Shadcn/UI (Button, Card, Dialog, Input, Slider, Accordion, Badge)"
+      },
+      "pages": [
+        {
+          "name": "Landing Page",
+          "route": "/",
+          "components": [
+            "Navbar: Logo left, 'How it Works' + 'Get Started' (Clerk login) right",
+            "Hero: Headline 'Master Your Job Interview with AI', pulsing CTA button, dashboard screenshot",
+            "3-feature card row: AI Questions, Real-time Voice, Detailed Analytics",
+            "Footer: GitHub link, Privacy Policy"
+          ]
+        },
+        {
+          "name": "Dashboard",
+          "route": "/dashboard",
+          "components": [
+            "Welcome banner with user's name (from Clerk)",
+            "Large '+' card: 'Start New Interview' — opens setup dialog",
+            "Interview history grid: Job Role, Date, Score badge, 'View Feedback' button",
+            "Empty state: Illustration + 'Start your first interview' CTA"
+          ]
+        },
+        {
+          "name": "Interview Setup",
+          "route": "/dashboard/new",
+          "components": [
+            "Form: Job Role (text input)",
+            "Job Description (textarea — paste JD here)",
+            "Years of Experience (Slider 0-10)",
+            "'Generate Interview' button → POST to create MockInterview → redirect to /interview/[id]"
+          ]
+        },
+        {
+          "name": "Interview Room",
+          "route": "/interview/[id]",
+          "layout": "Split screen",
+          "components": [
+            "Left: AI side — soundwave animation + question transcript",
+            "Right: User side — webcam feed + mic button",
+            "Mic button: Red pulsing ring when active, gray when idle",
+            "'End Interview' button (top right, red)",
+            "Question counter: 'Question 3 of 5' progress indicator"
+          ]
+        },
+        {
+          "name": "Feedback Page",
+          "route": "/interview/[id]/feedback",
+          "components": [
+            "Large circular score (e.g. 74%) using Recharts RadialBarChart",
+            "Radar chart: 5 axes — Technical Accuracy, Communication, Problem Solving, Experience, Confidence",
+            "Accordion list: one row per question — expand to see Your Answer vs AI Ideal Answer + Rating badge",
+            "Strengths and Improvement areas as two-column grid"
+          ]
+        },
+        {
+          "name": "Settings",
+          "route": "/settings",
+          "components": [
+            "Profile: Edit display name and profile picture via Clerk UserProfile component",
+            "Security: Managed entirely by Clerk"
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "title": "14-Day Execution Roadmap",
+      "note": "Each day assumes 2-3 hours of focused work. Core logic is prioritized in Phase 2. Do not skip or reorder phases.",
+      "phases": [
+        {
+          "phase": 1,
+          "name": "Skeleton",
+          "days": "1-4",
+          "tasks": [
+            { "day": 1, "task": "npx create-next-app@latest. Install Clerk, configure .env.local. Confirm /dashboard redirects to login." },
+            { "day": 2, "task": "Create Firebase project. Install Prisma. Write schema.prisma. Run: prisma db push. Seed one test record." },
+            { "day": 3, "task": "Build shared Navbar and Footer. Build landing page Hero section. Deploy to Vercel early." },
+            { "day": 4, "task": "Build Dashboard UI with static mock data. Build 'New Interview' form dialog (UI only, no submit logic yet)." }
+          ]
+        },
+        {
+          "phase": 2,
+          "name": "AI & Logic — MOST CRITICAL PHASE",
+          "days": "5-9",
+          "tasks": [
+            { "day": 5, "task": "Get Gemini API key. Install @google/generative-ai. Write lib/gemini.ts and lib/prompts.ts. Test with Node.js script." },
+            { "day": 6, "task": "Connect 'New Interview' form to database. POST /api/interview/create saves record. Redirect to /interview/[id]." },
+            { "day": 7, "task": "Install react-webcam and react-speech-recognition. Build Interview Room layout. Hook up mic — print transcript to screen." },
+            { "day": 8, "task": "Build POST /api/generate-question (full implementation). Wire frontend: speak → API → question → TTS. THIS IS THE CORE FEATURE." },
+            { "day": 9, "task": "Save every Q&A pair to DB. Add question counter. Build 'End Interview' flow redirecting to feedback page." }
+          ]
+        },
+        {
+          "phase": 3,
+          "name": "Feedback & Polish",
+          "days": "10-12",
+          "tasks": [
+            { "day": 10, "task": "Build POST /api/generate-feedback. Send full transcript to Gemini with evaluation prompt. Parse JSON response." },
+            { "day": 11, "task": "Install recharts. Build Feedback Page: RadialBarChart for score, RadarChart for dimensions, Accordion for Q&A." },
+            { "day": 12, "task": "Build Settings page with Clerk <UserProfile />. Add middleware. Test that User A cannot access User B's interview data." }
+          ]
+        },
+        {
+          "phase": 4,
+          "name": "Launch",
+          "days": "13-14",
+          "tasks": [
+            { "day": 13, "task": "Bug fixes. Add Shadcn Skeleton loading states everywhere. Test full flow end-to-end. Check mobile responsiveness." },
+            { "day": 14, "task": "Final Vercel deployment. Add all env vars to Vercel dashboard. Update GitHub README with Live Demo link. DONE." }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "title": "Environment & Configuration",
+      "env_variables": {
+        "file": ".env.local",
+        "warning": "Never commit this file to Git",
+        "variables": [
+          { "key": "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "example": "pk_test_xxxxxxxxxxxx" },
+          { "key": "CLERK_SECRET_KEY", "example": "sk_test_xxxxxxxxxxxx" },
+          { "key": "NEXT_PUBLIC_CLERK_SIGN_IN_URL", "value": "/sign-in" },
+          { "key": "NEXT_PUBLIC_CLERK_SIGN_UP_URL", "value": "/sign-up" },
+          { "key": "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL", "value": "/dashboard" },
+          { "key": "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL", "value": "/dashboard" },
+          { "key": "DATABASE_URL", "example": "postgresql://user:password@host/mockmate?schema=public" },
+          { "key": "GEMINI_API_KEY", "example": "AIzaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+        ]
+      },
+      "install_commands": [
+        "npx create-next-app@latest mockmate --typescript --tailwind --app --eslint",
+        "npm install @clerk/nextjs @google/generative-ai prisma @prisma/client react-webcam react-speech-recognition recharts shadcn-ui lucide-react",
+        "npx shadcn-ui@latest init",
+        "npx prisma init",
+        "npx prisma db push",
+        "npm run dev"
+      ],
+      "middleware": {
+        "file": "middleware.ts",
+        "public_routes": ["/", "/sign-in", "/sign-up"],
+        "protected_routes": "/dashboard/*, /interview/*"
+      }
+    },
+
+    {
+      "id": 9,
+      "title": "Security Checklist",
+      "critical_rule": "A user must NEVER be able to view, modify, or delete another user's interview data.",
+      "checks": [
+        {
+          "name": "Data Isolation",
+          "description": "Every MockInterview record stores the Clerk userId. On every API route, verify the userId from auth() matches the interview's userId before returning data.",
+          "pattern": "if (!interview || interview.userId !== userId) return 403 Forbidden"
+        },
+        { "name": "API Key Security", "description": "GEMINI_API_KEY is server-side only — never in NEXT_PUBLIC_* variables." },
+        { "name": "Input Sanitization", "description": "Trim and limit job description input to prevent prompt injection attacks." },
+        { "name": "Rate Limiting", "description": "Add per-userId counter for Gemini API calls. Max 5 interviews/day on free tier." },
+        { "name": "HTTPS", "description": "Vercel provides this automatically — never deploy to HTTP." }
+      ]
+    },
+
+    {
+      "id": 10,
+      "title": "Deployment Guide (Vercel)",
+      "steps": [
+        "Push code to a GitHub repository.",
+        "Go to vercel.com → Import Project → Select your GitHub repo.",
+        "In Vercel dashboard: Settings → Environment Variables → add all .env.local variables.",
+        "Trigger a new deployment. Vercel auto-detects Next.js and handles build.",
+        "Copy live URL → add to GitHub README as 'Live Demo'."
+      ],
+      "post_deployment_checklist": [
+        "Test full interview flow end-to-end on the live URL",
+        "Verify Clerk OAuth redirect URLs include your Vercel domain",
+        "Check Firebase connection works from Vercel serverless environment",
+        "Test on mobile browser (mic/webcam permissions)",
+        "Confirm 403 error when accessing another user's interview"
+      ],
+      "resume_bullets": [
+        "Developed an AI-powered interview simulation platform using Next.js 14 and Gemini 1.5 Flash, enabling real-time multi-turn technical interviews with voice I/O.",
+        "Engineered a stateful context engine that reconstructs conversation history per API call using Firebase and Prisma, solving LLM statelessness.",
+        "Implemented React Speech Recognition (STT) and Web Speech API (TTS) for seamless hands-free interview experience.",
+        "Built a post-interview analytics dashboard with Recharts (RadarChart, RadialBarChart) rendering AI-generated JSON feedback.",
+        "Secured user data isolation via Clerk auth and per-request ownership validation across all API routes."
+      ]
+    },
+
+    {
+      "id": 11,
+      "title": "Common Pitfalls & Solutions",
+      "pitfalls": [
+        { "pitfall": "LLM forgets context", "solution": "Always send FULL chat history on every API call. Never send just the latest message." },
+        { "pitfall": "Mic captures AI voice", "solution": "Only start STT in the onEnd callback of SpeechSynthesisUtterance." },
+        { "pitfall": "Speech API unavailable", "solution": "Use browserSupportsSpeechRecognition flag — show a fallback text input if false." },
+        { "pitfall": "Gemini returns malformed JSON", "solution": "Add try/catch around JSON.parse and re-prompt once if it fails. Include 'respond ONLY with valid JSON' in prompt." },
+        { "pitfall": "Rate limit exceeded (free tier)", "solution": "Gemini 1.5 Flash: 15 RPM. Add loading state and retry with 2s delay. Show 'AI is thinking...'." },
+        { "pitfall": "Prisma cold start on Vercel", "solution": "Use a PrismaClient singleton pattern in lib/prisma.ts to avoid exhausting DB connections." },
+        { "pitfall": "Vercel build fails", "solution": "Run npm run build locally first. Fix all TypeScript errors before pushing." },
+        { "pitfall": "User sees blank screen", "solution": "Add Shadcn Skeleton loading states for every async operation." }
+      ]
+    },
+
+    {
+      "id": 12,
+      "title": "Folder Structure",
+      "structure": {
+        "app/": {
+          "(auth)/": {
+            "sign-in/[[...sign-in]]/page.tsx": "Clerk sign-in page",
+            "sign-up/[[...sign-up]]/page.tsx": "Clerk sign-up page"
+          },
+          "(main)/": {
+            "dashboard/page.tsx": "Dashboard home",
+            "dashboard/new/page.tsx": "Interview setup form",
+            "interview/[interviewId]/page.tsx": "Interview room",
+            "interview/[interviewId]/feedback/page.tsx": "Feedback & analytics",
+            "settings/page.tsx": "User settings"
+          },
+          "api/": {
+            "interview/create/route.ts": "POST: create new interview",
+            "generate-question/route.ts": "POST: get next AI question",
+            "generate-feedback/route.ts": "POST: get full interview feedback"
+          },
+          "layout.tsx": "Root layout with ClerkProvider",
+          "page.tsx": "Landing page"
+        },
+        "components/": {
+          "ui/": "Shadcn auto-generated components",
+          "interview/": ["WebcamView.tsx", "MicButton.tsx", "QuestionDisplay.tsx", "SoundWaveAnimation.tsx"],
+          "feedback/": ["ScoreCircle.tsx", "RadarChart.tsx", "QuestionAccordion.tsx"],
+          "Navbar.tsx": "Shared navbar",
+          "Footer.tsx": "Shared footer"
+        },
+        "hooks/": {
+          "useSpeechInput.ts": "STT hook wrapping react-speech-recognition"
+        },
+        "lib/": {
+          "prisma.ts": "PrismaClient singleton",
+          "gemini.ts": "Gemini API wrapper",
+          "prompts.ts": "System prompt builders"
+        },
+        "prisma/": {
+          "schema.prisma": "Database schema"
+        },
+        "middleware.ts": "Clerk route protection",
+        ".env.local": "Environment variables — never commit"
+      }
+    },
+
+    {
+      "id": 13,
+      "title": "Quick Reference Card",
+      "commands": {
+        "npm run dev": "Start local dev server",
+        "npx prisma studio": "Visual DB editor in browser",
+        "npx prisma db push": "Push schema changes to DB",
+        "npx prisma generate": "Regenerate Prisma client after schema change",
+        "npm run build": "Test production build locally"
+      },
+      "api_endpoints": [
+        { "method": "POST", "route": "/api/interview/create", "purpose": "Creates new MockInterview record", "returns": "{ interviewId }" },
+        { "method": "POST", "route": "/api/generate-question", "purpose": "Gets next AI question with full context", "returns": "{ question, isComplete }" },
+        { "method": "POST", "route": "/api/generate-feedback", "purpose": "Gets full structured feedback JSON", "returns": "Full feedback object" },
+        { "method": "GET", "route": "/api/interview/[id]", "purpose": "Returns interview data + all messages", "returns": "{ interview, messages }" }
+      ],
+      "gemini_models": [
+        { "model": "gemini-1.5-flash", "use_case": "Interview Q&A", "free_tier_limit": "15 RPM", "note": "Default — fast and low latency" },
+        { "model": "gemini-1.5-pro", "use_case": "Feedback generation", "free_tier_limit": "2 RPM", "note": "Higher quality — use sparingly" }
+      ],
+      "final_note": "Ship working core logic (AI conversation + voice) by Day 8. Everything after that is enhancement. A working but ugly MockMate is worth infinitely more than a beautiful but broken one."
+    }
+  ]
+}

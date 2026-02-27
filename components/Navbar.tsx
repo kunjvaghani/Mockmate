@@ -44,7 +44,7 @@ export default function Navbar() {
                                     variant="ghost"
                                     className="text-sm font-medium text-slate-600 hover:text-indigo-600"
                                 >
-                                    Dashboard
+                                    Interview Dashboard
                                 </Button>
                             </Link>
                             <UserButton
@@ -90,7 +90,7 @@ export default function Navbar() {
                                 className="block px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                Dashboard
+                                Interview Dashboard
                             </Link>
                             <div className="px-3 py-2">
                                 <UserButton afterSignOutUrl="/" />

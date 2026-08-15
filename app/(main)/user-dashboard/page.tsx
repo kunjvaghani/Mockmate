@@ -32,8 +32,25 @@ interface Interview {
     jobExperience: string;
     createdAt: string;
     ended?: boolean;
+    duration?: number | null;
     feedbackJson?: string | null;
     messages?: { id: string; aiRating?: number | null }[];
+}
+
+function formatDuration(seconds?: number | null): string | null {
+    if (seconds == null || seconds <= 0) return null;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs}s`;
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+}
+
+function formatHHMMSS(seconds?: number | null): string {
+    const total = seconds != null && seconds > 0 ? seconds : 300; // default 05:00 (300s -> 00:05:00)
+    const hrs = Math.floor(total / 3600);
+    const mins = Math.floor((total % 3600) / 60);
+    const secs = total % 60;
+    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
 function getFeedbackScore(interview: Interview): number | null {
@@ -240,8 +257,8 @@ function InterviewsPanel({ interviews, loading }: { interviews: Interview[]; loa
                                         return score !== null ? (
                                             <Badge className={`text-xs border-0 ${score >= 70 ? 'bg-emerald-50 text-emerald-700' :
                                                     score >= 40 ? 'bg-amber-50 text-amber-700' :
-                                                        'bg-red-50 text-red-700'
-                                                }`}>
+                                                         'bg-red-50 text-red-700'
+                                                 }`}>
                                                 <Star className="h-3 w-3 mr-1" />
                                                 {score}%
                                             </Badge>
@@ -249,9 +266,13 @@ function InterviewsPanel({ interviews, loading }: { interviews: Interview[]; loa
                                     })()}
                                     <Link href={`/interview/${interview.id}/feedback`}>
                                         <Button variant="outline" size="sm" className="text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                                            Feedback
+                                             Feedback
                                         </Button>
                                     </Link>
+                                    <Badge variant="outline" className="text-xs font-mono font-medium text-slate-600 bg-slate-50 border-slate-200 flex items-center gap-1 py-1 px-2.5">
+                                        <Clock className="h-3 w-3 text-slate-400" />
+                                        {formatHHMMSS(interview.duration)}
+                                    </Badge>
                                     {!interview.ended && (
                                         <Link href={`/interview/${interview.id}`}>
                                             <Button size="icon" className="h-8 w-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
@@ -310,10 +331,18 @@ function FeedbacksPanel({ interviews, loading }: { interviews: Interview[]; load
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="text-sm font-semibold text-slate-800 truncate">{interview.jobRole}</h3>
-                                        <span className="flex items-center gap-1 text-xs text-slate-400 mt-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {new Date(interview.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                        </span>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <span className="flex items-center gap-1 text-xs text-slate-400">
+                                                <Calendar className="h-3 w-3" />
+                                                {new Date(interview.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                            </span>
+                                            {formatDuration(interview.duration) && (
+                                                <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md font-medium">
+                                                    <Clock className="h-3 w-3 text-slate-400" />
+                                                    {formatDuration(interview.duration)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     {(() => {
                                         const score = getFeedbackScore(interview);

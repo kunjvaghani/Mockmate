@@ -16,6 +16,7 @@ model MockInterview {
   createdAt     DateTime     @default(now())
   feedbackJson  String?      @db.String
   ended         Boolean      @default(false)
+  duration      Int?
   messages      UserAnswer[]
 }
 

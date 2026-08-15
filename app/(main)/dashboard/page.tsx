@@ -16,6 +16,7 @@ import {
     Sparkles,
     Hand,
     Star,
+    Clock,
 } from "lucide-react";
 
 interface Interview {
@@ -24,7 +25,16 @@ interface Interview {
     jobExperience: string;
     createdAt: string;
     ended?: boolean;
+    duration?: number | null;
     feedbackJson?: string | null;
+}
+
+function formatDuration(seconds?: number | null): string | null {
+    if (seconds == null || seconds <= 0) return null;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs}s`;
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
 }
 
 function getFeedbackScore(interview: Interview): number | null {
@@ -131,13 +141,21 @@ export default function DashboardPage() {
                                     {interview.jobRole}
                                 </h3>
 
-                                <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-6">
-                                    <Calendar className="h-3.5 w-3.5" />
-                                    {new Date(interview.createdAt).toLocaleDateString("en-US", {
-                                        month: "short",
-                                        day: "numeric",
-                                        year: "numeric",
-                                    })}
+                                <div className="flex items-center gap-3 text-xs text-slate-400 mb-6">
+                                    <span className="flex items-center gap-1.5">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        {new Date(interview.createdAt).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                        })}
+                                    </span>
+                                    {formatDuration(interview.duration) && (
+                                        <span className="flex items-center gap-1 text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md font-medium">
+                                            <Clock className="h-3 w-3 text-slate-400" />
+                                            {formatDuration(interview.duration)}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="mt-auto flex gap-2">

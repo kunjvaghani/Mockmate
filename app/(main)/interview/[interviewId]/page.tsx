@@ -19,9 +19,16 @@ import {
     VideoOff,
     Keyboard,
     Mic,
+    Clock,
 } from "lucide-react";
 
 const TOTAL_QUESTIONS = 5;
+
+function formatTimer(totalSeconds: number): string {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
 
 export default function InterviewRoomPage() {
     const params = useParams();
@@ -30,6 +37,7 @@ export default function InterviewRoomPage() {
 
     const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
     const [questionNumber, setQuestionNumber] = useState(0);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
@@ -56,6 +64,13 @@ export default function InterviewRoomPage() {
                 const res = await fetch(`/api/interview/${interviewId}`);
                 if (res.ok) {
                     const data = await res.json();
+                    if (data.interview.ended) {
+                        router.push(`/interview/${interviewId}/feedback`);
+                        return;
+                    }
+                    if (typeof data.interview.duration === "number") {
+                        setElapsedSeconds(data.interview.duration);
+                    }
                     const messages = data.interview.messages || [];
                     if (messages.length > 0) {
                         // Resume interview
@@ -63,9 +78,6 @@ export default function InterviewRoomPage() {
                         setCurrentQuestion(lastMsg.question);
                         setQuestionNumber(messages.length);
                         setInterviewStarted(true);
-                        if (!lastMsg.userAnswer) {
-                            // AI asked, user hasn't answered yet
-                        }
                     }
                 }
             } catch (err) {
@@ -75,7 +87,16 @@ export default function InterviewRoomPage() {
             }
         }
         loadInterview();
-    }, [interviewId]);
+    }, [interviewId, router]);
+
+    // Live interview timer
+    useEffect(() => {
+        if (!interviewStarted || isComplete) return;
+        const timer = setInterval(() => {
+            setElapsedSeconds((prev) => prev + 1);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [interviewStarted, isComplete]);
 
     // Auto-enable text input if speech not supported
     useEffect(() => {
@@ -106,7 +127,15 @@ export default function InterviewRoomPage() {
                 if (data.isComplete) {
                     setIsComplete(true);
                     setCurrentQuestion(null);
-                    // Redirect to feedback page
+                    try {
+                        await fetch(`/api/interview/${interviewId}/end`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ duration: elapsedSeconds }),
+                        });
+                    } catch (e) {
+                        console.error("Failed to end interview:", e);
+                    }
                     router.push(`/interview/${interviewId}/feedback`);
                     return;
                 }
@@ -132,7 +161,7 @@ export default function InterviewRoomPage() {
                 setIsThinking(false);
             }
         },
-        [interviewId, router, useTextInput, speechSupported, startListening]
+        [interviewId, router, useTextInput, speechSupported, startListening, elapsedSeconds]
     );
 
     const handleStartInterview = async () => {
@@ -163,6 +192,8 @@ export default function InterviewRoomPage() {
         try {
             await fetch(`/api/interview/${interviewId}/end`, {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ duration: elapsedSeconds }),
             });
         } catch (err) {
             console.error("Failed to end interview:", err);
@@ -191,9 +222,15 @@ export default function InterviewRoomPage() {
                             Mock Interview
                         </h1>
                         {interviewStarted && (
-                            <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">
-                                Question {questionNumber} / {TOTAL_QUESTIONS}
-                            </span>
+                            <>
+                                <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">
+                                    Question {questionNumber} / {TOTAL_QUESTIONS}
+                                </span>
+                                <span className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">
+                                    <Clock className="h-3 w-3 text-slate-500" />
+                                    {formatTimer(elapsedSeconds)}
+                                </span>
+                            </>
                         )}
                     </div>
 

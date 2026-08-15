@@ -301,35 +301,39 @@ function NewInterviewForm() {
 
                         {/* If user has saved resume and not toggling new upload */}
                         {savedResume && !showUploadDropzone ? (
-                            <div className="p-4 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="h-9 w-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                            <div className="p-5 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-3.5 overflow-hidden">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="h-10 w-10 shrink-0 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
                                             <FileText className="h-5 w-5" />
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-900">{savedResume.fileName}</p>
-                                            <p className="text-xs text-slate-500">
+                                        <div className="min-w-0">
+                                            <p className="text-base font-bold text-slate-900 truncate">{savedResume.fileName}</p>
+                                            <p className="text-sm font-medium text-slate-600">
                                                 {savedResume.experience || "1"} YOE • {savedResume.parsedRole || "Extracted Role"}
                                             </p>
                                         </div>
                                     </div>
-                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold">
-                                        <CheckCircle2 className="h-3 w-3 mr-1" /> Active Resume
+                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs sm:text-sm font-semibold self-start sm:self-auto shrink-0 py-1 px-2.5">
+                                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Active Resume
                                     </Badge>
                                 </div>
 
                                 {savedResume.skills && savedResume.skills.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5 pt-1">
-                                        {savedResume.skills.slice(0, 6).map((skill) => (
-                                            <Badge
-                                                key={skill}
-                                                variant="secondary"
-                                                className="bg-purple-50 text-purple-700 border-0 text-[11px]"
-                                            >
-                                                {skill}
-                                            </Badge>
-                                        ))}
+                                    <div className="flex flex-wrap gap-2 pt-1 max-w-full">
+                                        {savedResume.skills
+                                            .flatMap((s) => s.split(/[,•|]/))
+                                            .map((s) => s.trim().replace(/^[-*•\s]+/, ""))
+                                            .filter((s) => s.length > 0)
+                                            .slice(0, 8)
+                                            .map((skill, idx) => (
+                                                <span
+                                                    key={`${skill}-${idx}`}
+                                                    className="inline-block max-w-full whitespace-normal break-words bg-purple-50 text-purple-800 border border-purple-200/70 text-xs sm:text-sm font-medium py-1 px-3 rounded-lg leading-snug"
+                                                >
+                                                    {skill}
+                                                </span>
+                                            ))}
                                     </div>
                                 )}
                             </div>

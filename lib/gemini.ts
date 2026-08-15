@@ -84,7 +84,7 @@ SCHEMA:
   "parsedRole": "Primary job title / domain (e.g. Full Stack Developer, Frontend Engineer, Backend Developer)",
   "techStack": "Comma-separated list of core technologies (e.g. React, Node.js, TypeScript, PostgreSQL)",
   "experience": "Estimated total years of professional experience as a single number string (e.g. '2')",
-  "skills": ["Skill1", "Skill2", "Skill3", "Skill4", "Skill5"],
+  "skills": ["Short atomic skill name (e.g. React, Python, MongoDB, LangChain - NO sentences)"],
   "summary": "2-3 sentence executive summary of the candidate's technical profile",
   "projects": [
     {

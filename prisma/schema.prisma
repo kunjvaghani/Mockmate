@@ -8,16 +8,18 @@ datasource db {
 }
 
 model MockInterview {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String
-  jobRole       String
-  jobDesc       String
-  jobExperience String
-  createdAt     DateTime     @default(now())
-  feedbackJson  String?      @db.String
-  ended         Boolean      @default(false)
-  duration      Int?
-  messages      UserAnswer[]
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String
+  jobRole        String
+  jobDesc        String
+  jobExperience  String
+  createdAt      DateTime     @default(now())
+  feedbackJson   String?      @db.String
+  ended          Boolean      @default(false)
+  duration       Int?
+  interviewMode  String       @default("STANDARD") // "STANDARD" or "RESUME"
+  resumeId       String?      @db.ObjectId
+  messages       UserAnswer[]
 }
 
 model UserAnswer {
@@ -29,4 +31,20 @@ model UserAnswer {
   aiFeedback       String?
   aiRating         Int?
   createdAt        DateTime      @default(now())
+}
+
+model UserResume {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @unique
+  fileName     String
+  fileSize     Int
+  rawText      String   @db.String
+  parsedRole   String?
+  techStack    String?
+  experience   String?
+  skills       String[]
+  summary      String?  @db.String
+  projectsJson String?  @db.String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

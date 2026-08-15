@@ -6,211 +6,319 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { BrainCircuit, Mic, BarChart3, ArrowRight, Sparkles, Zap, Shield } from "lucide-react";
+import {
+  BrainCircuit,
+  Mic,
+  BarChart3,
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Shield,
+  Star,
+  CheckCircle2,
+  Cpu,
+  Flame,
+  Award,
+} from "lucide-react";
 
 export default function LandingPage() {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.2 },
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.1,
+      },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 24 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5 },
+      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    },
+  };
+
+  const floatAnimation = {
+    y: [0, -8, 0],
+    transition: {
+      duration: 3.5,
+      repeat: Infinity,
+      ease: "easeInOut",
     },
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-50/50 selection:bg-indigo-500 selection:text-white">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background decorations */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-indigo-100/20 to-purple-100/20 rounded-full blur-3xl" />
+      <section className="relative overflow-hidden pt-6 pb-12 sm:pt-10 sm:pb-16 lg:pt-12 lg:pb-18">
+        {/* Background ambient glow meshes */}
+        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+          <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-gradient-to-br from-indigo-200/25 via-purple-200/20 to-transparent rounded-full blur-3xl -translate-y-1/3" />
+          <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-gradient-to-br from-purple-200/20 to-transparent rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
         </div>
 
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-medium mb-8">
-              <Sparkles className="h-4 w-4" />
-              AI-Powered Interview Practice
-            </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="text-center max-w-3xl mx-auto"
+          >
+            {/* Top Pill Badge */}
+            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100/80 text-indigo-700 text-xs sm:text-sm font-semibold mb-5 shadow-xs">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+              <span>AI-Powered Technical Interview Simulator</span>
+            </motion.div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-6">
-              Master Your Job <br />
-              <span className="text-gradient">Interview with AI</span>
-            </h1>
+            {/* Main Headline - Natural, balanced sizing */}
+            <motion.h1
+              variants={itemVariants}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight text-slate-900 mb-5 leading-tight"
+            >
+              Practice Technical Interviews. <br />
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 bg-clip-text text-transparent">
+                Get Instant AI Feedback.
+              </span>
+            </motion.h1>
 
-            <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Practice with a context-aware AI interviewer that adapts to your role,
-              speaks follow-up questions aloud, and delivers detailed performance analytics.
-            </p>
+            {/* Subtitle */}
+            <motion.p
+              variants={itemVariants}
+              className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto mb-7 leading-relaxed font-normal"
+            >
+              Simulate realistic mock interviews tailored to your target role. Speak your answers aloud, receive follow-ups, and get detailed scoring across 5 key dimensions.
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/sign-up">
-                <Button size="lg" className="h-14 px-8 text-base bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all animate-pulse-glow rounded-full">
+            {/* CTA Buttons */}
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3.5"
+            >
+              <Link href="/sign-up" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all rounded-full font-semibold group cursor-pointer"
+                >
                   Start Practicing Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="#features">
-                <Button size="lg" variant="outline" className="h-14 px-8 text-base rounded-full border-slate-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+              <Link href="#features" className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base rounded-full border-slate-200 bg-white/80 backdrop-blur hover:bg-slate-50 text-slate-700 transition-all font-medium"
+                >
                   See How It Works
                 </Button>
               </Link>
-            </div>
+            </motion.div>
 
-            {/* Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+            {/* Stats bar */}
+            <motion.div
+              variants={itemVariants}
+              className="mt-10 pt-6 border-t border-slate-200/60 grid grid-cols-3 gap-4 max-w-md mx-auto"
+            >
               {[
-                { label: "Questions/Session", value: "5" },
-                { label: "AI Response Time", value: "<1s" },
-                { label: "Feedback Axes", value: "5" },
+                { label: "Questions/Session", value: "5 Rounds" },
+                { label: "Voice Latency", value: "< 1 sec" },
+                { label: "Feedback Axes", value: "5 Dimensions" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <p className="text-2xl sm:text-3xl font-bold text-gradient">{stat.value}</p>
-                  <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
+                  <p className="text-lg sm:text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    {stat.value}
+                  </p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-0.5">{stat.label}</p>
                 </div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-16 sm:py-20 bg-white/80 backdrop-blur-sm relative border-y border-slate-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Everything You Need to <span className="text-gradient">Ace Your Interview</span>
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2.5">
+              Everything You Need to <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Ace Your Interview</span>
             </h2>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-              From AI-generated questions to voice interaction and detailed analytics — all in your browser.
+            <p className="text-sm sm:text-base text-slate-500 max-w-xl mx-auto">
+              From dynamic AI questions to voice interaction and radar charts — all in your browser.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 icon: BrainCircuit,
-                title: "AI-Powered Questions",
-                description: "Context-aware questions that adapt to your job role, experience level, and answers. Difficulty ramps up naturally.",
-                gradient: "from-indigo-500 to-blue-500",
-                bgGradient: "from-indigo-50 to-blue-50",
+                title: "Context-Aware Questions",
+                description: "Analyzes your job role and description to ask targeted questions that gradually increase in depth and complexity.",
+                bgGradient: "from-indigo-50 to-blue-50/60",
+                borderHover: "hover:border-indigo-300",
               },
               {
                 icon: Mic,
                 title: "Real-Time Voice I/O",
-                description: "Speak your answers naturally. The AI listens, processes, and responds with its own voice — just like a real interview.",
-                gradient: "from-purple-500 to-pink-500",
-                bgGradient: "from-purple-50 to-pink-50",
+                description: "Speak your answers naturally with real-time speech-to-text. The AI answers back with clear, natural speech synthesis.",
+                bgGradient: "from-purple-50 to-pink-50/60",
+                borderHover: "hover:border-purple-300",
               },
               {
                 icon: BarChart3,
-                title: "Detailed Analytics",
-                description: "Get scored on 5 dimensions with radar charts, per-question feedback, ideal answers, and actionable improvement tips.",
-                gradient: "from-emerald-500 to-teal-500",
-                bgGradient: "from-emerald-50 to-teal-50",
+                title: "5-Axis Performance Radar",
+                description: "Get evaluated on Technical Accuracy, Communication, Problem Solving, Experience Depth, and Confidence.",
+                bgGradient: "from-cyan-50 to-emerald-50/60",
+                borderHover: "hover:border-cyan-300",
               },
-            ].map((feature) => (
-              <Card
+            ].map((feature, idx) => (
+              <motion.div
                 key={feature.title}
-                className="group relative overflow-hidden border-0 shadow-lg shadow-slate-100 hover:shadow-xl hover:shadow-indigo-100 transition-all duration-300 hover:-translate-y-1 rounded-2xl"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                whileHover={{ y: -4 }}
               >
-                <CardContent className="p-8">
-                  <div className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.bgGradient} mb-6 group-hover:scale-110 transition-transform`}>
-                    <feature.icon className={`h-7 w-7 bg-gradient-to-br ${feature.gradient} bg-clip-text`} style={{ color: feature.gradient.includes('indigo') ? '#4f46e5' : feature.gradient.includes('purple') ? '#9333ea' : '#10b981' }} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900 mb-3">{feature.title}</h3>
-                  <p className="text-slate-500 leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
+                <Card
+                  className={`group relative overflow-hidden border border-slate-200/80 ${feature.borderHover} shadow-sm hover:shadow-lg shadow-slate-100 hover:shadow-indigo-100/50 transition-all duration-300 rounded-2xl h-full bg-white`}
+                >
+                  <CardContent className="p-7">
+                    <motion.div
+                      animate={floatAnimation}
+                      className={`inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.bgGradient} mb-5 shadow-xs group-hover:scale-105 transition-transform`}
+                    >
+                      <feature.icon className={`h-6 w-6 text-indigo-600`} />
+                    </motion.div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">{feature.title}</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-24 bg-gradient-to-b from-slate-50 to-white">
+      <section className="pt-14 pb-10 sm:pt-16 sm:pb-12 bg-gradient-to-b from-slate-50 via-white to-slate-50/50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Three Steps to <span className="text-gradient">Interview Ready</span>
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+              Three Steps to <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Interview Ready</span>
             </h2>
+            <p className="text-sm sm:text-base text-slate-500 max-w-md mx-auto">
+              Configure, speak, and review analytics in just a few minutes.
+            </p>
           </div>
 
           <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            className="grid md:grid-cols-3 gap-12"
+            viewport={{ once: true, margin: "-60px" }}
+            className="grid md:grid-cols-3 gap-8 sm:gap-10 relative"
           >
             {[
               {
-                step: "01",
+                step: "1",
                 icon: Zap,
-                title: "Configure Your Session",
-                description: "Enter your target job role, paste the job description, and set your experience level.",
+                title: "Configure Session",
+                description: "Enter your target job role, years of experience, and job description.",
               },
               {
-                step: "02",
+                step: "2",
                 icon: Mic,
                 title: "Practice with AI",
-                description: "The AI asks questions, you answer by voice. It listens, follows up, and adapts — just like a real interviewer.",
+                description: "Answer questions through your mic. The AI listens, follows up, and adapts.",
               },
               {
-                step: "03",
+                step: "3",
                 icon: Shield,
-                title: "Get Feedback",
-                description: "Receive a detailed score breakdown, ideal answers for each question, and personalized improvement tips.",
+                title: "Review Analytics",
+                description: "Get detailed score radar charts, ideal answers, and actionable feedback.",
               },
             ].map((item, i) => (
-              <motion.div key={item.step} variants={itemVariants} className="relative text-center">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 text-white text-xl font-bold mb-6 shadow-lg shadow-indigo-200">
+              <motion.div
+                key={item.step}
+                variants={itemVariants}
+                className="relative flex flex-col items-center text-center group"
+              >
+                {/* Properly centered dashed connecting line behind step circles */}
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-6 left-[50%] w-[100%] border-t-2 border-dashed border-indigo-200 z-0" />
+                )}
+
+                {/* Step Circle */}
+                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 text-white text-base font-bold mb-4 shadow-md shadow-indigo-200 ring-4 ring-white group-hover:scale-105 transition-transform">
                   {item.step}
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-3">{item.title}</h3>
-                <p className="text-slate-500 leading-relaxed">{item.description}</p>
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-8 left-[calc(100%_-_16px)] w-[calc(100%_-_64px)] border-t-2 border-dashed border-indigo-200" />
-                )}
+
+                <h3 className="text-base font-bold text-slate-900 mb-1.5">{item.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-xs">{item.description}</p>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24">
+      {/* Cohesive Indigo/Purple Gradient CTA Section (No huge gap, matches site theme) */}
+      <section className="pt-4 pb-14 sm:pb-18">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-8 py-16 sm:px-16 text-center shadow-2xl shadow-indigo-200">
-            <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
-            <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-6 py-10 sm:px-12 sm:py-14 text-center shadow-xl shadow-indigo-200/50"
+          >
+            {/* Subtle background glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-400/20 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative z-10 max-w-2xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
                 Ready to Ace Your Next Interview?
               </h2>
-              <p className="text-indigo-100 text-lg mb-8 max-w-xl mx-auto">
-                Join MockMate and practice with AI that truly understands your role. It&apos;s free to start.
+              <p className="text-indigo-100 text-sm sm:text-base mb-6 max-w-lg mx-auto leading-relaxed">
+                Practice with AI that adapts to your role, sharpens your answers, and gives you the confidence to succeed.
               </p>
+
+              {/* Value points */}
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-white/90 font-medium mb-8">
+                <span className="flex items-center gap-1.5 bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                  Free Voice AI
+                </span>
+                <span className="flex items-center gap-1.5 bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                  Instant Radar Reports
+                </span>
+                <span className="flex items-center gap-1.5 bg-white/15 backdrop-blur px-3 py-1.5 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                  Zero Setup
+                </span>
+              </div>
+
+              {/* White CTA button matching the app theme */}
               <Link href="/sign-up">
-                <Button size="lg" className="h-14 px-10 text-base bg-white text-indigo-700 hover:bg-indigo-50 rounded-full font-semibold shadow-xl transition-all">
-                  Get Started — It&apos;s Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button
+                  size="lg"
+                  className="h-12 px-8 text-sm sm:text-base bg-white text-indigo-700 hover:bg-indigo-50 rounded-full font-semibold shadow-lg shadow-indigo-900/20 hover:shadow-xl transition-all cursor-pointer"
+                >
+                  Start Practicing Free
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 

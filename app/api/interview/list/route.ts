@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
                 jobExperience: true,
                 createdAt: true,
                 ended: true,
+                duration: true,
                 feedbackJson: true,
             },
         });

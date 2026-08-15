@@ -269,8 +269,8 @@ function InterviewsPanel({ interviews, loading }: { interviews: Interview[]; loa
                                              Feedback
                                         </Button>
                                     </Link>
-                                    <Badge variant="outline" className="text-xs font-mono font-medium text-slate-600 bg-slate-50 border-slate-200 flex items-center gap-1 py-1 px-2.5">
-                                        <Clock className="h-3 w-3 text-slate-400" />
+                                    <Badge variant="outline" className="text-xs font-mono font-bold text-slate-900 bg-slate-100 border-slate-300 shadow-xs flex items-center gap-1.5 py-1 px-2.5 tracking-tight">
+                                        <Clock className="h-3.5 w-3.5 text-indigo-600" />
                                         {formatHHMMSS(interview.duration)}
                                     </Badge>
                                     {!interview.ended && (

@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+} from "recharts";
+import {
     Mic,
     MessageSquare,
     BarChart3,
@@ -418,6 +427,45 @@ function AnalysisPanel({
         { label: "Improvement", value: totalInterviews > 1 ? "+12%" : "N/A", icon: TrendingUp, color: "text-purple-600", bg: "bg-purple-50" },
     ];
 
+    // Sort interviews chronologically (oldest to newest) for trend chart
+    const chronologicalInterviews = [...interviews].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    const chartData = chronologicalInterviews.map((iv, idx) => {
+        let score = getFeedbackScore(iv);
+        if (score === null && iv.messages && iv.messages.length > 0) {
+            const ratings = iv.messages.filter((m) => m.aiRating != null).map((m) => m.aiRating!);
+            if (ratings.length > 0) {
+                score = Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10);
+            }
+        }
+        return {
+            id: iv.id,
+            session: `Session ${idx + 1}`,
+            role: iv.jobRole,
+            date: new Date(iv.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            score: score ?? 0,
+        };
+    });
+
+    const CustomScoreTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: typeof chartData[0] }> }) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            return (
+                <div className="bg-slate-900/95 backdrop-blur text-white p-3 rounded-xl shadow-xl border border-slate-800 text-xs">
+                    <p className="font-bold text-indigo-300">{data.session} • {data.role}</p>
+                    <p className="text-slate-400 mt-0.5">{data.date}</p>
+                    <div className="mt-2 flex items-center gap-1.5 font-semibold text-emerald-400 text-sm">
+                        <Star className="h-3.5 w-3.5 fill-emerald-400" />
+                        <span>Score: {data.score}%</span>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
+
     return (
         <div>
             <div className="mb-6">
@@ -438,6 +486,71 @@ function AnalysisPanel({
                     </Card>
                 ))}
             </div>
+
+            {/* Score Progress Trend Chart */}
+            <Card className="rounded-2xl border-0 shadow-sm mb-8 overflow-hidden bg-white">
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-indigo-600" />
+                            Score Progress Trend
+                        </CardTitle>
+                        <Badge variant="secondary" className="bg-indigo-50 text-indigo-700 border-0 text-xs font-semibold">
+                            Overall Score (%)
+                        </Badge>
+                    </div>
+                    <p className="text-xs text-slate-400">Chronological score progression across your interview sessions</p>
+                </CardHeader>
+                <CardContent className="pt-4 pb-6 px-4">
+                    {chartData.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <BarChart3 className="h-10 w-10 text-slate-300 mb-2" />
+                            <p className="text-sm font-medium text-slate-600">No interview score data yet</p>
+                            <p className="text-xs text-slate-400 max-w-xs mt-1">
+                                Complete your first mock interview to generate performance analytics.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="h-72 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="scoreAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.35} />
+                                            <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickLine={false}
+                                        axisLine={{ stroke: "#e2e8f0" }}
+                                        tick={{ fill: "#64748b", fontSize: 12 }}
+                                    />
+                                    <YAxis
+                                        domain={[0, 100]}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tick={{ fill: "#64748b", fontSize: 12 }}
+                                        tickFormatter={(v) => `${v}%`}
+                                    />
+                                    <Tooltip content={<CustomScoreTooltip />} />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="score"
+                                        stroke="#4f46e5"
+                                        strokeWidth={3}
+                                        fillOpacity={1}
+                                        fill="url(#scoreAreaGradient)"
+                                        dot={{ fill: "#4f46e5", strokeWidth: 2, r: 4, stroke: "#ffffff" }}
+                                        activeDot={{ r: 6, fill: "#4f46e5", stroke: "#ffffff", strokeWidth: 2 }}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             <Card className="rounded-2xl border-0 shadow-sm">
                 <CardHeader>

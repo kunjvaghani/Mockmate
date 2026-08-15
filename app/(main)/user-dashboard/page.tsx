@@ -24,6 +24,8 @@ import {
     Bell,
     Shield,
     Palette,
+    Trash2,
+    Loader2,
 } from "lucide-react";
 
 interface Interview {
@@ -77,6 +79,29 @@ export default function UserDashboardPage() {
     const [activeTab, setActiveTab] = useState<SidebarTab>("interviews");
     const [interviews, setInterviews] = useState<Interview[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const handleDeleteInterview = async (interviewId: string) => {
+        const confirmed = window.confirm("Are you sure you want to delete this interview? This will permanently delete the interview and all associated answers.");
+        if (!confirmed) return;
+
+        setDeletingId(interviewId);
+        try {
+            const res = await fetch(`/api/interview/${interviewId}`, {
+                method: "DELETE",
+            });
+            if (res.ok) {
+                setInterviews((prev) => prev.filter((iv) => iv.id !== interviewId));
+            } else {
+                alert("Failed to delete interview. Please try again.");
+            }
+        } catch (err) {
+            console.error("Failed to delete interview:", err);
+            alert("Error deleting interview.");
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     useEffect(() => {
         async function fetchInterviews() {
@@ -176,7 +201,12 @@ export default function UserDashboardPage() {
                         />
                     )}
                     {activeTab === "settings" && (
-                        <SettingsPanel user={user} />
+                        <SettingsPanel
+                            user={user}
+                            interviews={interviews}
+                            onDeleteInterview={handleDeleteInterview}
+                            deletingId={deletingId}
+                        />
                     )}
                 </main>
             </div>
@@ -453,7 +483,17 @@ function AnalysisPanel({
 }
 
 /* ─── SETTINGS PANEL ──────────────────────────────────────────────── */
-function SettingsPanel({ user }: { user: ReturnType<typeof useUser>["user"] }) {
+function SettingsPanel({
+    user,
+    interviews,
+    onDeleteInterview,
+    deletingId,
+}: {
+    user: ReturnType<typeof useUser>["user"];
+    interviews: Interview[];
+    onDeleteInterview: (id: string) => Promise<void>;
+    deletingId: string | null;
+}) {
     const settingsSections = [
         {
             title: "Profile",
@@ -500,28 +540,100 @@ function SettingsPanel({ user }: { user: ReturnType<typeof useUser>["user"] }) {
                 <p className="text-sm text-slate-500 mt-0.5">Manage your account and preferences</p>
             </div>
 
-            <div className="space-y-4">
-                {settingsSections.map((section) => (
-                    <Card key={section.title} className="rounded-2xl border-0 shadow-sm">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                                <section.icon className="h-5 w-5 text-indigo-600" />
-                                {section.title}
-                            </CardTitle>
-                            <p className="text-xs text-slate-400">{section.description}</p>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {section.items.map((item) => (
-                                    <div key={item.label} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                                        <span className="text-sm text-slate-600">{item.label}</span>
-                                        <span className="text-sm font-medium text-slate-800">{item.value}</span>
+            <div className="space-y-6">
+                {/* Interview Management & Deletion */}
+                <Card className="rounded-2xl border-0 shadow-sm overflow-hidden border-red-100 bg-white">
+                    <CardHeader className="pb-3 border-b border-red-50 bg-red-50/40">
+                        <CardTitle className="text-base font-semibold text-red-900 flex items-center gap-2">
+                            <Trash2 className="h-5 w-5 text-red-600" />
+                            Manage & Delete Interviews
+                        </CardTitle>
+                        <p className="text-xs text-red-700/80">
+                            Delete any mock interview. This permanently deletes the session and all user answers associated with it.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="p-5">
+                        {interviews.length === 0 ? (
+                            <p className="text-sm text-slate-400 py-3 text-center">
+                                No interviews available to delete.
+                            </p>
+                        ) : (
+                            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                                {interviews.map((iv) => (
+                                    <div
+                                        key={iv.id}
+                                        className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/70 transition-colors border border-slate-100"
+                                    >
+                                        <div className="min-w-0 flex-1 mr-4">
+                                            <p className="text-sm font-semibold text-slate-800 truncate">
+                                                {iv.jobRole}
+                                            </p>
+                                            <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                                                <span>
+                                                    {new Date(iv.createdAt).toLocaleDateString("en-US", {
+                                                        month: "short",
+                                                        day: "numeric",
+                                                        year: "numeric",
+                                                    })}
+                                                </span>
+                                                <span>•</span>
+                                                <span>{iv.jobExperience} YOE</span>
+                                                <span>•</span>
+                                                <span className="font-mono font-medium text-slate-600">
+                                                    {formatHHMMSS(iv.duration)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            disabled={deletingId === iv.id}
+                                            onClick={() => onDeleteInterview(iv.id)}
+                                            className="rounded-xl h-8 px-3 text-xs bg-red-600 hover:bg-red-700 text-white flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                                        >
+                                            {deletingId === iv.id ? (
+                                                <>
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    Deleting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    Delete
+                                                </>
+                                            )}
+                                        </Button>
                                     </div>
                                 ))}
                             </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Other Settings Sections */}
+                <div className="space-y-4">
+                    {settingsSections.map((section) => (
+                        <Card key={section.title} className="rounded-2xl border-0 shadow-sm">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
+                                    <section.icon className="h-5 w-5 text-indigo-600" />
+                                    {section.title}
+                                </CardTitle>
+                                <p className="text-xs text-slate-400">{section.description}</p>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    {section.items.map((item) => (
+                                        <div key={item.label} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                                            <span className="text-sm text-slate-600">{item.label}</span>
+                                            <span className="text-sm font-medium text-slate-800">{item.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </div>
         </div>
     );

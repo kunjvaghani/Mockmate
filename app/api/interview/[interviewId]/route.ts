@@ -36,3 +36,44 @@ export async function GET(
         );
     }
 }
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ interviewId: string }> }
+) {
+    try {
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { interviewId } = await params;
+
+        // Verify ownership
+        const interview = await prisma.mockInterview.findUnique({
+            where: { id: interviewId },
+        });
+
+        if (!interview || interview.userId !== userId) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // Delete all answers associated with this mock interview
+        await prisma.userAnswer.deleteMany({
+            where: { mockInterviewId: interviewId },
+        });
+
+        // Delete the mock interview itself
+        await prisma.mockInterview.delete({
+            where: { id: interviewId },
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting interview:", error);
+        return NextResponse.json(
+            { error: "Failed to delete interview" },
+            { status: 500 }
+        );
+    }
+}

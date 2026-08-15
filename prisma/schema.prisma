@@ -17,6 +17,7 @@ model MockInterview {
   feedbackJson   String?      @db.String
   ended          Boolean      @default(false)
   duration       Int?
+  questionCount  Int?         @default(5)
   interviewMode  String       @default("STANDARD") // "STANDARD" or "RESUME"
   resumeId       String?      @db.ObjectId
   messages       UserAnswer[]

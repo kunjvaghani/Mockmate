@@ -22,6 +22,7 @@ import {
     Target,
     FileUp,
     ChevronDown,
+    ListOrdered,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -60,6 +61,7 @@ function NewInterviewForm() {
         jobRole: "",
         jobDesc: "",
         jobExperience: "1",
+        questionCount: "5",
     });
 
     const activeResume = resumesList.find((r) => r.id === selectedResumeId) || resumesList[0] || null;
@@ -100,15 +102,17 @@ function NewInterviewForm() {
                     if (targetResume) {
                         setSelectedResumeId(targetResume.id);
                         if (mode === "RESUME" || paramResumeId) {
-                            setFormData({
-                                jobRole: targetResume.parsedRole || role || "Software Engineer",
+                            setFormData((prev) => ({
+                                ...prev,
+                                jobRole: targetResume.parsedRole || role || prev.jobRole || "Software Engineer",
                                 jobDesc:
                                     targetResume.summary ||
                                     targetResume.techStack ||
                                     desc ||
+                                    prev.jobDesc ||
                                     "Technical interview grounded in candidate's resume projects and tech stack.",
-                                jobExperience: targetResume.experience || exp || "1",
-                            });
+                                jobExperience: targetResume.experience || exp || prev.jobExperience || "1",
+                            }));
                         }
                     }
                 }
@@ -125,15 +129,16 @@ function NewInterviewForm() {
     const handleSelectResume = (resume: SavedResume) => {
         setSelectedResumeId(resume.id);
         setShowUploadDropzone(false);
-        setFormData({
-            jobRole: resume.parsedRole || formData.jobRole || "Software Engineer",
+        setFormData((prev) => ({
+            ...prev,
+            jobRole: resume.parsedRole || prev.jobRole || "Software Engineer",
             jobDesc:
                 resume.summary ||
                 resume.techStack ||
-                formData.jobDesc ||
+                prev.jobDesc ||
                 "Technical interview grounded in candidate's resume projects and tech stack.",
-            jobExperience: resume.experience || formData.jobExperience || "1",
-        });
+            jobExperience: resume.experience || prev.jobExperience || "1",
+        }));
     };
 
     // Handle resume file upload & parsing
@@ -158,15 +163,16 @@ function NewInterviewForm() {
                 setSelectedResumeId(data.resume.id);
                 setShowUploadDropzone(false);
 
-                // Auto-fill form fields with parsed resume data
-                setFormData({
+                // Auto-fill form fields with parsed resume data while preserving questionCount
+                setFormData((prev) => ({
+                    ...prev,
                     jobRole: data.resume.parsedRole || "Software Engineer",
                     jobDesc:
                         data.resume.summary ||
                         data.resume.techStack ||
                         "Technical interview grounded in candidate's resume projects and tech stack.",
                     jobExperience: data.resume.experience || "1",
-                });
+                }));
             } else {
                 setUploadError(data.error || "Failed to parse resume. Please check the file format.");
             }
@@ -213,6 +219,7 @@ function NewInterviewForm() {
                     jobRole: formData.jobRole,
                     jobDesc: formData.jobDesc,
                     jobExperience: formData.jobExperience,
+                    questionCount: parseInt(formData.questionCount) || 5,
                     interviewMode,
                     resumeId: interviewMode === "RESUME" && activeResume ? activeResume.id : null,
                 }),
@@ -528,24 +535,85 @@ function NewInterviewForm() {
                         />
                     </div>
 
-                    {/* Experience */}
-                    <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                            <Clock className="h-4 w-4 text-indigo-500" />
-                            Years of Experience
-                        </label>
-                        <div className="flex items-center gap-4">
-                            <Input
-                                type="number"
-                                min="0"
-                                max="30"
-                                value={formData.jobExperience}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, jobExperience: e.target.value })
-                                }
-                                className="h-12 w-24 rounded-xl border-slate-200 focus:border-indigo-400 focus:ring-indigo-400 text-center text-lg font-semibold"
-                            />
-                            <span className="text-sm text-slate-500">year(s)</span>
+                    {/* Experience & Question Count Row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {/* Experience */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                <Clock className="h-4 w-4 text-indigo-500" />
+                                Years of Experience
+                            </label>
+                            <div className="flex items-center gap-4">
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    max="30"
+                                    value={formData.jobExperience}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, jobExperience: e.target.value })
+                                    }
+                                    className="h-12 w-24 rounded-xl border-slate-200 focus:border-indigo-400 focus:ring-indigo-400 text-center text-lg font-semibold"
+                                />
+                                <span className="text-sm text-slate-500">year(s)</span>
+                            </div>
+                        </div>
+
+                        {/* Number of Questions */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                    <ListOrdered className="h-4 w-4 text-purple-600" />
+                                    Number of Questions (1 - 10)
+                                </label>
+                                <span className="text-xs font-semibold text-purple-600">
+                                    Max 10
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Input
+                                    type="number"
+                                    min="1"
+                                    max="10"
+                                    value={formData.questionCount}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val === "") {
+                                            setFormData({ ...formData, questionCount: "" });
+                                            return;
+                                        }
+                                        const num = parseInt(val);
+                                        if (!isNaN(num)) {
+                                            const clamped = Math.min(10, Math.max(1, num));
+                                            setFormData({ ...formData, questionCount: String(clamped) });
+                                        }
+                                    }}
+                                    className="h-12 w-24 rounded-xl border-slate-200 focus:border-purple-400 focus:ring-purple-400 text-center text-lg font-semibold"
+                                    required
+                                />
+                                {/* Quick Select Preset Pills */}
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {[3, 5, 7, 10].map((count) => {
+                                        const isSelected = formData.questionCount === String(count);
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={count}
+                                                onClick={() => setFormData({ ...formData, questionCount: String(count) })}
+                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                                                    isSelected
+                                                        ? "bg-purple-600 text-white shadow-xs"
+                                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                                }`}
+                                            >
+                                                {count} Qs
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                                Choose how many questions you want to answer (up to 10).
+                            </p>
                         </div>
                     </div>
 

@@ -9,7 +9,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { jobRole, jobDesc, jobExperience, interviewMode = "STANDARD", resumeId } = await req.json();
+        const {
+            jobRole,
+            jobDesc,
+            jobExperience,
+            questionCount = 5,
+            interviewMode = "STANDARD",
+            resumeId,
+        } = await req.json();
 
         if (!jobRole || !jobDesc || !jobExperience) {
             return NextResponse.json(
@@ -18,12 +25,15 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        const validQuestionCount = Math.min(10, Math.max(1, parseInt(questionCount) || 5));
+
         const interview = await prisma.mockInterview.create({
             data: {
                 userId,
                 jobRole: jobRole.trim(),
                 jobDesc: jobDesc.trim().slice(0, 5000), // Limit to prevent prompt injection
                 jobExperience: String(jobExperience),
+                questionCount: validQuestionCount,
                 interviewMode: interviewMode === "RESUME" ? "RESUME" : "STANDARD",
                 resumeId: resumeId || null,
             },

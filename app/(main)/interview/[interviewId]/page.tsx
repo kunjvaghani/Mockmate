@@ -22,8 +22,6 @@ import {
     Clock,
 } from "lucide-react";
 
-const TOTAL_QUESTIONS = 5;
-
 function formatTimer(totalSeconds: number): string {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
@@ -37,6 +35,7 @@ export default function InterviewRoomPage() {
 
     const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
     const [questionNumber, setQuestionNumber] = useState(0);
+    const [totalQuestions, setTotalQuestions] = useState(5);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isThinking, setIsThinking] = useState(false);
@@ -70,6 +69,9 @@ export default function InterviewRoomPage() {
                     }
                     if (typeof data.interview.duration === "number") {
                         setElapsedSeconds(data.interview.duration);
+                    }
+                    if (data.interview.questionCount) {
+                        setTotalQuestions(data.interview.questionCount);
                     }
                     const messages = data.interview.messages || [];
                     if (messages.length > 0) {
@@ -224,7 +226,7 @@ export default function InterviewRoomPage() {
                         {interviewStarted && (
                             <>
                                 <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">
-                                    Question {questionNumber} / {TOTAL_QUESTIONS}
+                                    Question {questionNumber} / {totalQuestions}
                                 </span>
                                 <span className="flex items-center gap-1 text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-medium">
                                     <Clock className="h-3 w-3 text-slate-500" />
@@ -289,7 +291,7 @@ export default function InterviewRoomPage() {
                         </h2>
                         <p className="text-slate-500 mb-8">
                             Make sure your camera and microphone are working. The AI will ask
-                            you {TOTAL_QUESTIONS} questions adapted to your role.
+                            you {totalQuestions} questions adapted to your role.
                         </p>
                         <Button
                             onClick={handleStartInterview}
@@ -315,7 +317,7 @@ export default function InterviewRoomPage() {
                                     <QuestionDisplay
                                         question={currentQuestion}
                                         questionNumber={questionNumber}
-                                        totalQuestions={TOTAL_QUESTIONS}
+                                        totalQuestions={totalQuestions}
                                         isThinking={isThinking}
                                     />
                                 </CardContent>

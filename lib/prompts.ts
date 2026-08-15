@@ -7,8 +7,10 @@ export function buildSystemPrompt(
         skills?: string[];
         projectsJson?: string | null;
         rawText?: string | null;
-    } | null
+    } | null,
+    questionCount: number = 5
 ): string {
+    const totalQuestions = Math.min(10, Math.max(1, questionCount || 5));
     let resumeSection = "";
     if (resumeContext) {
         resumeSection = `
@@ -36,7 +38,7 @@ YOUR RULES:
 5. Cover: Core Concepts, System Design, Problem Solving, Past Experience, Cultural Fit.
 6. Keep questions relevant to the job description and candidate background.
 7. Be professional, concise, and encouraging.
-8. After 5 exchanges, respond ONLY with: [INTERVIEW_COMPLETE]`;
+8. After ${totalQuestions} exchanges, respond ONLY with: [INTERVIEW_COMPLETE]`;
 }
 
 export function buildFeedbackPrompt(

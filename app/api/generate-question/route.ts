@@ -58,12 +58,15 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Build system prompt with optional resume context
+        const totalQuestions = interview.questionCount || 5;
+
+        // Build system prompt with optional resume context and target question count
         const systemPrompt = buildSystemPrompt(
             interview.jobRole,
             interview.jobExperience,
             interview.jobDesc,
-            resumeContext
+            resumeContext,
+            totalQuestions
         );
 
         // Reconstruct chat history for Gemini
@@ -94,7 +97,11 @@ export async function POST(req: NextRequest) {
             userMessage
         );
 
-        const isComplete = aiResponse.includes(INTERVIEW_COMPLETE_TOKEN);
+        // Complete if token received or already reached total questions limit
+        const isComplete =
+            aiResponse.includes(INTERVIEW_COMPLETE_TOKEN) ||
+            (interview.messages.length >= totalQuestions && Boolean(userAnswer));
+
         const cleanedQuestion = aiResponse
             .replace(INTERVIEW_COMPLETE_TOKEN, "")
             .trim();

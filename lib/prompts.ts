@@ -1,12 +1,32 @@
 export function buildSystemPrompt(
     jobRole: string,
     experience: string,
-    jobDesc: string
+    jobDesc: string,
+    resumeContext?: {
+        summary?: string | null;
+        skills?: string[];
+        projectsJson?: string | null;
+        rawText?: string | null;
+    } | null
 ): string {
+    let resumeSection = "";
+    if (resumeContext) {
+        resumeSection = `
+CANDIDATE'S ACTUAL RESUME CONTEXT:
+- Profile Summary: ${resumeContext.summary || "Not specified"}
+- Declared Skills: ${resumeContext.skills?.join(", ") || "Not specified"}
+- Past Projects & Roles: ${resumeContext.projectsJson || "Extracted from resume"}
+${resumeContext.rawText ? `- Raw Resume Excerpt: ${resumeContext.rawText.slice(0, 1500)}` : ""}
+
+IMPORTANT INSTRUCTION FOR RESUME-GROUNDED INTERVIEW:
+Deeply verify and ask questions about the candidate's actual projects, technologies, and achievements listed on their resume, evaluating how well their hands-on background maps to the ${jobRole} requirements.`;
+    }
+
     return `You are an expert senior technical interviewer conducting a mock interview.
 The candidate is applying for: ${jobRole}
 Years of experience claimed: ${experience}
 Job Description context: ${jobDesc}
+${resumeSection}
 
 YOUR RULES:
 1. Ask exactly ONE question per turn.
@@ -14,7 +34,7 @@ YOUR RULES:
 3. If the answer is vague, ask ONE targeted follow-up.
 4. Do NOT reveal answers. Probe deeper instead.
 5. Cover: Core Concepts, System Design, Problem Solving, Past Experience, Cultural Fit.
-6. Keep questions relevant to the job description.
+6. Keep questions relevant to the job description and candidate background.
 7. Be professional, concise, and encouraging.
 8. After 5 exchanges, respond ONLY with: [INTERVIEW_COMPLETE]`;
 }

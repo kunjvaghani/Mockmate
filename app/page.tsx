@@ -38,7 +38,7 @@ export default function LandingPage() {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+      transition: { duration: 0.6, ease: "easeOut" as const },
     },
   };
 
@@ -47,7 +47,7 @@ export default function LandingPage() {
     transition: {
       duration: 3.5,
       repeat: Infinity,
-      ease: "easeInOut",
+      ease: "easeInOut" as const,
     },
   };
 

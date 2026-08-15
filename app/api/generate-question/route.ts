@@ -36,11 +36,34 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // Build system prompt
+        // Fetch resume context if interviewMode is RESUME or resumeId exists
+        let resumeContext = null;
+        if (interview.interviewMode === "RESUME" || interview.resumeId) {
+            const userResume = await prisma.userResume.findFirst({
+                where: {
+                    OR: [
+                        ...(interview.resumeId ? [{ id: interview.resumeId }] : []),
+                        { userId },
+                    ],
+                },
+            });
+
+            if (userResume) {
+                resumeContext = {
+                    summary: userResume.summary,
+                    skills: userResume.skills,
+                    projectsJson: userResume.projectsJson,
+                    rawText: userResume.rawText,
+                };
+            }
+        }
+
+        // Build system prompt with optional resume context
         const systemPrompt = buildSystemPrompt(
             interview.jobRole,
             interview.jobExperience,
-            interview.jobDesc
+            interview.jobDesc,
+            resumeContext
         );
 
         // Reconstruct chat history for Gemini

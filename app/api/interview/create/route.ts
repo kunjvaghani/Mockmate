@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { jobRole, jobDesc, jobExperience } = await req.json();
+        const { jobRole, jobDesc, jobExperience, interviewMode = "STANDARD", resumeId } = await req.json();
 
         if (!jobRole || !jobDesc || !jobExperience) {
             return NextResponse.json(
@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
                 jobRole: jobRole.trim(),
                 jobDesc: jobDesc.trim().slice(0, 5000), // Limit to prevent prompt injection
                 jobExperience: String(jobExperience),
+                interviewMode: interviewMode === "RESUME" ? "RESUME" : "STANDARD",
+                resumeId: resumeId || null,
             },
         });
 

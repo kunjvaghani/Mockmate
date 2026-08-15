@@ -85,33 +85,43 @@ export async function POST(req: NextRequest) {
         // Parse structured data using selected AI model (Gemini or Mistral based on env)
         const parsed = await parseResumeStructured(rawText);
 
-        // Upsert into MongoDB UserResume
-        const savedResume = await prisma.userResume.upsert({
-            where: { userId },
-            update: {
-                fileName,
-                fileSize,
-                rawText: rawText.slice(0, 50000),
-                parsedRole: parsed.parsedRole,
-                techStack: parsed.techStack,
-                experience: parsed.experience,
-                skills: parsed.skills || [],
-                summary: parsed.summary,
-                projectsJson: JSON.stringify(parsed.projects || []),
-            },
-            create: {
-                userId,
-                fileName,
-                fileSize,
-                rawText: rawText.slice(0, 50000),
-                parsedRole: parsed.parsedRole,
-                techStack: parsed.techStack,
-                experience: parsed.experience,
-                skills: parsed.skills || [],
-                summary: parsed.summary,
-                projectsJson: JSON.stringify(parsed.projects || []),
-            },
+        // Check if a resume with the same fileName already exists for this user
+        const existing = await prisma.userResume.findFirst({
+            where: { userId, fileName },
         });
+
+        let savedResume;
+        if (existing) {
+            savedResume = await prisma.userResume.update({
+                where: { id: existing.id },
+                data: {
+                    fileSize,
+                    rawText: rawText.slice(0, 50000),
+                    parsedRole: parsed.parsedRole,
+                    techStack: parsed.techStack,
+                    experience: parsed.experience,
+                    skills: parsed.skills || [],
+                    summary: parsed.summary,
+                    projectsJson: JSON.stringify(parsed.projects || []),
+                    updatedAt: new Date(),
+                },
+            });
+        } else {
+            savedResume = await prisma.userResume.create({
+                data: {
+                    userId,
+                    fileName,
+                    fileSize,
+                    rawText: rawText.slice(0, 50000),
+                    parsedRole: parsed.parsedRole,
+                    techStack: parsed.techStack,
+                    experience: parsed.experience,
+                    skills: parsed.skills || [],
+                    summary: parsed.summary,
+                    projectsJson: JSON.stringify(parsed.projects || []),
+                },
+            });
+        }
 
         return NextResponse.json({
             success: true,

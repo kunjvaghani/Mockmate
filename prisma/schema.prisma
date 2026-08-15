@@ -35,7 +35,7 @@ model UserAnswer {
 
 model UserResume {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @unique
+  userId       String
   fileName     String
   fileSize     Int
   rawText      String   @db.String

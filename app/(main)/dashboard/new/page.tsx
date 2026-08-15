@@ -18,11 +18,10 @@ import {
     UploadCloud,
     FileCheck2,
     CheckCircle2,
-    RefreshCw,
-    X,
+    PlusCircle,
     Target,
-    Layers,
     FileUp,
+    ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -51,7 +50,8 @@ function NewInterviewForm() {
     const [uploadingResume, setUploadingResume] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
-    const [savedResume, setSavedResume] = useState<SavedResume | null>(null);
+    const [resumesList, setResumesList] = useState<SavedResume[]>([]);
+    const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
     const [showUploadDropzone, setShowUploadDropzone] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,11 +62,19 @@ function NewInterviewForm() {
         jobExperience: "1",
     });
 
-    // Check for query params & fetch existing resume on load
+    const activeResume = resumesList.find((r) => r.id === selectedResumeId) || resumesList[0] || null;
+
+    // Check for query params & fetch existing resumes on load
     useEffect(() => {
         const role = searchParams.get("role");
         const desc = searchParams.get("desc");
         const exp = searchParams.get("exp");
+        const mode = searchParams.get("mode");
+        const paramResumeId = searchParams.get("resumeId");
+
+        if (mode === "RESUME" || paramResumeId) {
+            setInterviewMode("RESUME");
+        }
 
         if (role || desc || exp) {
             setFormData((prev) => ({
@@ -76,24 +84,57 @@ function NewInterviewForm() {
             }));
         }
 
-        // Fetch saved resume
-        async function loadResume() {
+        // Fetch all saved resumes
+        async function loadResumes() {
             try {
                 const res = await fetch("/api/resume");
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.resume) {
-                        setSavedResume(data.resume);
+                    const list: SavedResume[] = data.resumes || (data.resume ? [data.resume] : []);
+                    setResumesList(list);
+
+                    const targetResume = paramResumeId
+                        ? list.find((r) => r.id === paramResumeId) || list[0]
+                        : list[0];
+
+                    if (targetResume) {
+                        setSelectedResumeId(targetResume.id);
+                        if (mode === "RESUME" || paramResumeId) {
+                            setFormData({
+                                jobRole: targetResume.parsedRole || role || "Software Engineer",
+                                jobDesc:
+                                    targetResume.summary ||
+                                    targetResume.techStack ||
+                                    desc ||
+                                    "Technical interview grounded in candidate's resume projects and tech stack.",
+                                jobExperience: targetResume.experience || exp || "1",
+                            });
+                        }
                     }
                 }
             } catch (err) {
-                console.error("Error loading resume:", err);
+                console.error("Error loading resumes:", err);
             } finally {
                 setFetchingResume(false);
             }
         }
-        loadResume();
+        loadResumes();
     }, [searchParams]);
+
+    // Handle resume selection change
+    const handleSelectResume = (resume: SavedResume) => {
+        setSelectedResumeId(resume.id);
+        setShowUploadDropzone(false);
+        setFormData({
+            jobRole: resume.parsedRole || formData.jobRole || "Software Engineer",
+            jobDesc:
+                resume.summary ||
+                resume.techStack ||
+                formData.jobDesc ||
+                "Technical interview grounded in candidate's resume projects and tech stack.",
+            jobExperience: resume.experience || formData.jobExperience || "1",
+        });
+    };
 
     // Handle resume file upload & parsing
     const handleFileUpload = async (file: File) => {
@@ -112,19 +153,20 @@ function NewInterviewForm() {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                setSavedResume(data.resume);
+                const updatedList = [data.resume, ...resumesList.filter((r) => r.id !== data.resume.id)];
+                setResumesList(updatedList);
+                setSelectedResumeId(data.resume.id);
                 setShowUploadDropzone(false);
 
                 // Auto-fill form fields with parsed resume data
-                setFormData((prev) => ({
-                    jobRole: data.resume.parsedRole || prev.jobRole || "Software Engineer",
+                setFormData({
+                    jobRole: data.resume.parsedRole || "Software Engineer",
                     jobDesc:
                         data.resume.summary ||
                         data.resume.techStack ||
-                        prev.jobDesc ||
                         "Technical interview grounded in candidate's resume projects and tech stack.",
-                    jobExperience: data.resume.experience || prev.jobExperience || "1",
-                }));
+                    jobExperience: data.resume.experience || "1",
+                });
             } else {
                 setUploadError(data.error || "Failed to parse resume. Please check the file format.");
             }
@@ -145,16 +187,15 @@ function NewInterviewForm() {
 
     const handleModeSwitch = (mode: "STANDARD" | "RESUME") => {
         setInterviewMode(mode);
-        if (mode === "RESUME" && savedResume) {
-            // Apply saved resume data if fields are blank
+        if (mode === "RESUME" && activeResume) {
             setFormData((prev) => ({
-                jobRole: prev.jobRole || savedResume.parsedRole || "Software Engineer",
+                jobRole: prev.jobRole || activeResume.parsedRole || "Software Engineer",
                 jobDesc:
                     prev.jobDesc ||
-                    savedResume.summary ||
-                    savedResume.techStack ||
+                    activeResume.summary ||
+                    activeResume.techStack ||
                     "Grounded in candidate's resume projects & skills.",
-                jobExperience: prev.jobExperience || savedResume.experience || "1",
+                jobExperience: prev.jobExperience || activeResume.experience || "1",
             }));
         }
     };
@@ -173,7 +214,7 @@ function NewInterviewForm() {
                     jobDesc: formData.jobDesc,
                     jobExperience: formData.jobExperience,
                     interviewMode,
-                    resumeId: interviewMode === "RESUME" && savedResume ? savedResume.id : null,
+                    resumeId: interviewMode === "RESUME" && activeResume ? activeResume.id : null,
                 }),
             });
 
@@ -277,30 +318,84 @@ function NewInterviewForm() {
                     </div>
                 </div>
 
-                {/* Resume Upload / Active Resume Section (When in RESUME mode or want to auto-fill) */}
+                {/* Resume Selection & Upload Section (When in RESUME mode) */}
                 {interviewMode === "RESUME" && (
                     <div className="p-5 rounded-2xl bg-slate-50 border border-purple-100 space-y-4">
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-bold uppercase tracking-wider text-purple-900 flex items-center gap-1.5">
                                 <FileUp className="h-4 w-4 text-purple-600" />
-                                Resume Grounding Source
+                                Select Active Resume ({resumesList.length})
                             </span>
-                            {savedResume && !showUploadDropzone && (
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href="/resume"
+                                    className="text-xs text-purple-600 hover:text-purple-800 font-semibold hover:underline"
+                                >
+                                    Manage Resumes
+                                </Link>
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setShowUploadDropzone(true)}
+                                    onClick={() => setShowUploadDropzone(!showUploadDropzone)}
                                     className="text-xs text-purple-700 hover:bg-purple-100/60 h-7 px-2"
                                 >
-                                    <RefreshCw className="h-3 w-3 mr-1" />
-                                    Upload Different Resume
+                                    <PlusCircle className="h-3.5 w-3.5 mr-1" />
+                                    Upload New
                                 </Button>
-                            )}
+                            </div>
                         </div>
 
-                        {/* If user has saved resume and not toggling new upload */}
-                        {savedResume && !showUploadDropzone ? (
+                        {/* Multi-Resume Selector (When user has > 1 resume) */}
+                        {resumesList.length > 1 && !showUploadDropzone && (
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-slate-600">
+                                    Choose which resume to use for this interview:
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    {resumesList.map((resItem) => {
+                                        const isCurrent = resItem.id === selectedResumeId;
+                                        return (
+                                            <div
+                                                key={resItem.id}
+                                                onClick={() => handleSelectResume(resItem)}
+                                                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                                                    isCurrent
+                                                        ? "border-purple-600 bg-white shadow-xs ring-1 ring-purple-600"
+                                                        : "border-slate-200 bg-white/70 hover:border-slate-300"
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div
+                                                        className={`h-7 w-7 shrink-0 rounded-lg flex items-center justify-center text-xs font-bold ${
+                                                            isCurrent
+                                                                ? "bg-purple-600 text-white"
+                                                                : "bg-slate-100 text-slate-600"
+                                                        }`}
+                                                    >
+                                                        <FileText className="h-3.5 w-3.5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold text-slate-900 truncate">
+                                                            {resItem.fileName}
+                                                        </p>
+                                                        <p className="text-[11px] text-slate-500">
+                                                            {resItem.experience || "1"} YOE • {resItem.parsedRole || "General"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {isCurrent && (
+                                                    <CheckCircle2 className="h-4 w-4 text-purple-600 shrink-0 ml-1.5" />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* If user has an active resume and not showing upload dropzone */}
+                        {activeResume && !showUploadDropzone ? (
                             <div className="p-5 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-3.5 overflow-hidden">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-center gap-3 min-w-0">
@@ -308,9 +403,11 @@ function NewInterviewForm() {
                                             <FileText className="h-5 w-5" />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-base font-bold text-slate-900 truncate">{savedResume.fileName}</p>
+                                            <p className="text-base font-bold text-slate-900 truncate">
+                                                {activeResume.fileName}
+                                            </p>
                                             <p className="text-sm font-medium text-slate-600">
-                                                {savedResume.experience || "1"} YOE • {savedResume.parsedRole || "Extracted Role"}
+                                                {activeResume.experience || "1"} YOE • {activeResume.parsedRole || "Extracted Role"}
                                             </p>
                                         </div>
                                     </div>
@@ -319,9 +416,9 @@ function NewInterviewForm() {
                                     </Badge>
                                 </div>
 
-                                {savedResume.skills && savedResume.skills.length > 0 && (
+                                {activeResume.skills && activeResume.skills.length > 0 && (
                                     <div className="flex flex-wrap gap-2 pt-1 max-w-full">
-                                        {savedResume.skills
+                                        {activeResume.skills
                                             .flatMap((s) => s.split(/[,•|]/))
                                             .map((s) => s.trim().replace(/^[-*•\s]+/, ""))
                                             .filter((s) => s.length > 0)
@@ -361,7 +458,7 @@ function NewInterviewForm() {
                                     <div className="flex flex-col items-center justify-center py-4">
                                         <Loader2 className="h-8 w-8 text-purple-600 animate-spin mb-2" />
                                         <p className="text-sm font-semibold text-slate-800">
-                                            Parsing Resume with Gemini AI...
+                                            Parsing Resume with AI...
                                         </p>
                                         <p className="text-xs text-slate-500 mt-1">
                                             Extracting your skills, past projects, and technical experience
@@ -376,7 +473,7 @@ function NewInterviewForm() {
                                             Click or Drag & Drop your Resume
                                         </p>
                                         <p className="text-xs text-slate-500 mt-1">
-                                            Supports PDF and DOCX (Max 10MB)
+                                            Supports PDF, DOCX, and TXT (Max 10MB)
                                         </p>
                                     </div>
                                 )}

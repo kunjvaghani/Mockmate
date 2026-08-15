@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { BrainCircuit, Menu, X, LayoutDashboard } from "lucide-react";
+import { BrainCircuit, Menu, X, LayoutDashboard, FileText } from "lucide-react";
 import { useState } from "react";
 
 export default function Navbar() {
@@ -39,6 +39,15 @@ export default function Navbar() {
                         )}
 
                         <SignedIn>
+                            <Link href="/resume">
+                                <Button
+                                    variant="ghost"
+                                    className="text-sm font-medium text-slate-600 hover:text-indigo-600 flex items-center gap-1.5"
+                                >
+                                    <FileText className="h-4 w-4 text-purple-600" />
+                                    Resume Parser
+                                </Button>
+                            </Link>
                             <Link href="/dashboard">
                                 <Button
                                     variant="ghost"
@@ -94,6 +103,14 @@ export default function Navbar() {
                 {mobileMenuOpen && (
                     <div className="md:hidden border-t border-slate-100 py-4 space-y-3">
                         <SignedIn>
+                            <Link
+                                href="/resume"
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <FileText className="h-4 w-4 text-purple-600" />
+                                Resume Parser
+                            </Link>
                             <Link
                                 href="/dashboard"
                                 className="block px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"

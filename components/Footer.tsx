@@ -24,11 +24,11 @@ export default function Footer() {
 
     const footerNavigation = {
         product: [
+            { name: "AI Resume Parser", href: "/resume", badge: "New" },
             { name: "Interview Simulator", href: "/dashboard/new", badge: "AI Voice" },
             { name: "Interview Dashboard", href: "/dashboard" },
             { name: "Performance Analytics", href: "/user-dashboard" },
             { name: "5-Axis Radar Scoring", href: "/#features" },
-            { name: "Real-Time Voice I/O", href: "/#features" },
         ],
         roles: [
             {
@@ -73,11 +73,11 @@ export default function Footer() {
             },
         ],
         resources: [
+            { name: "AI Resume Analyzer", href: "/resume" },
             { name: "How MockMate Works", href: "/#features" },
             { name: "Scoring Methodology", href: "/user-dashboard" },
             { name: "Sample Ideal Answers", href: "/dashboard" },
             { name: "Voice Setup Guide", href: "/#features" },
-            { name: "Session History", href: "/user-dashboard" },
         ],
         legal: [
             { name: "Privacy Policy", href: "#" },

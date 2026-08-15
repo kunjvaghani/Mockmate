@@ -6,7 +6,7 @@
 [![React](https://img.shields.io/badge/React-19.2-blue?style=flat-square&logo=react)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![Prisma](https://img.shields.io/badge/Prisma-6.19-green?style=flat-square&logo=prisma)](https://prisma.io)
-[![Firebase](https://img.shields.io/badge/Firebase-Real--time-yellow?style=flat-square&logo=firebase)](https://firebase.google.com)
+[![MongoDB](https://shields.io)](https://mongodb.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 **Transform Your Interview Skills with AI-Powered Practice Sessions**

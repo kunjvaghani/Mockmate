@@ -35,6 +35,9 @@ import {
     Palette,
     Trash2,
     Loader2,
+    FileText,
+    FileUp,
+    CheckCircle2,
 } from "lucide-react";
 
 interface Interview {
@@ -46,6 +49,20 @@ interface Interview {
     duration?: number | null;
     feedbackJson?: string | null;
     messages?: { id: string; aiRating?: number | null }[];
+}
+
+interface ResumeInfo {
+    id: string;
+    fileName: string;
+    fileSize: number;
+    parsedRole?: string;
+    techStack?: string;
+    experience?: string;
+    skills?: string[];
+    summary?: string;
+    projectsJson?: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 function formatDuration(seconds?: number | null): string | null {
@@ -74,12 +91,13 @@ function getFeedbackScore(interview: Interview): number | null {
     }
 }
 
-type SidebarTab = "interviews" | "feedbacks" | "analysis" | "settings";
+type SidebarTab = "interviews" | "feedbacks" | "analysis" | "resumes" | "settings";
 
 const sidebarItems: { key: SidebarTab; label: string; icon: React.ElementType; description: string }[] = [
     { key: "interviews", label: "Interviews", icon: Mic, description: "Your interview sessions" },
     { key: "feedbacks", label: "Feedbacks", icon: MessageSquare, description: "AI-generated feedback" },
     { key: "analysis", label: "Analysis", icon: BarChart3, description: "Performance analytics" },
+    { key: "resumes", label: "Resume Info", icon: FileText, description: "Uploaded resumes & skills" },
     { key: "settings", label: "Settings", icon: Settings, description: "Account preferences" },
 ];
 
@@ -87,7 +105,9 @@ export default function UserDashboardPage() {
     const { user } = useUser();
     const [activeTab, setActiveTab] = useState<SidebarTab>("interviews");
     const [interviews, setInterviews] = useState<Interview[]>([]);
+    const [resumes, setResumes] = useState<ResumeInfo[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingResumes, setLoadingResumes] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const handleDeleteInterview = async (interviewId: string) => {
@@ -126,7 +146,24 @@ export default function UserDashboardPage() {
                 setLoading(false);
             }
         }
+
+        async function fetchResumes() {
+            try {
+                const res = await fetch("/api/resume");
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = data.resumes || (data.resume ? [data.resume] : []);
+                    setResumes(list);
+                }
+            } catch (err) {
+                console.error("Failed to fetch resumes:", err);
+            } finally {
+                setLoadingResumes(false);
+            }
+        }
+
         fetchInterviews();
+        fetchResumes();
     }, []);
 
     const totalInterviews = interviews.length;
@@ -208,6 +245,9 @@ export default function UserDashboardPage() {
                             avgRating={avgRating}
                             interviews={interviews}
                         />
+                    )}
+                    {activeTab === "resumes" && (
+                        <ResumeInfoPanel resumes={resumes} loading={loadingResumes} />
                     )}
                     {activeTab === "settings" && (
                         <SettingsPanel
@@ -591,6 +631,168 @@ function AnalysisPanel({
                     )}
                 </CardContent>
             </Card>
+        </div>
+    );
+}
+
+/* ─── RESUME INFO PANEL ───────────────────────────────────────────── */
+function ResumeInfoPanel({
+    resumes,
+    loading,
+}: {
+    resumes: ResumeInfo[];
+    loading: boolean;
+}) {
+    return (
+        <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900">Resume Info</h2>
+                    <p className="text-sm text-slate-500 mt-0.5">
+                        Your uploaded resumes, extracted job profiles, and highlighted technical skills
+                    </p>
+                </div>
+                <Link href="/resume">
+                    <Button className="h-10 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold shadow-sm cursor-pointer">
+                        <FileUp className="h-4 w-4 mr-2" />
+                        Upload New Resume
+                    </Button>
+                </Link>
+            </div>
+
+            {loading ? (
+                <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                        <Card key={i} className="rounded-2xl border-0 shadow-sm p-6 bg-white">
+                            <Skeleton className="h-6 w-1/3 mb-3" />
+                            <Skeleton className="h-4 w-1/2 mb-4" />
+                            <Skeleton className="h-8 w-3/4" />
+                        </Card>
+                    ))}
+                </div>
+            ) : resumes.length === 0 ? (
+                <Card className="rounded-2xl border-0 shadow-sm p-10 text-center bg-white">
+                    <div className="mx-auto h-12 w-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                        <FileText className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800 mb-1">No resumes uploaded yet</h3>
+                    <p className="text-sm text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
+                        Upload your resume (.PDF, .DOCX, .TXT) to automatically extract your skills, past projects, and ground your mock interviews.
+                    </p>
+                    <Link href="/resume">
+                        <Button className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm">
+                            <FileUp className="h-4 w-4 mr-2" />
+                            Upload Resume Now
+                        </Button>
+                    </Link>
+                </Card>
+            ) : (
+                <div className="space-y-4">
+                    {resumes.map((resume) => {
+                        // Extract 5 to 7 highlighted skills
+                        const highlightedSkills = (resume.skills || [])
+                            .flatMap((s) => s.split(/[,•|]/))
+                            .map((s) => s.trim().replace(/^[-*•\s]+/, ""))
+                            .filter((s) => s.length > 0)
+                            .slice(0, 7);
+
+                        return (
+                            <Card
+                                key={resume.id}
+                                className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white overflow-hidden"
+                            >
+                                <CardContent className="p-6">
+                                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                                            <div className="h-11 w-11 shrink-0 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold mt-0.5">
+                                                <FileText className="h-6 w-6" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className="text-base font-bold text-slate-900 truncate">
+                                                        {resume.fileName}
+                                                    </h3>
+                                                    {resume.parsedRole && (
+                                                        <Badge className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold">
+                                                            {resume.parsedRole}
+                                                        </Badge>
+                                                    )}
+                                                    {resume.experience && (
+                                                        <Badge className="bg-slate-100 text-slate-700 border-0 text-xs font-medium">
+                                                            {resume.experience} YOE
+                                                        </Badge>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-3 text-xs text-slate-500 mt-1.5 flex-wrap">
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                                        Uploaded on{" "}
+                                                        {new Date(resume.createdAt).toLocaleDateString("en-US", {
+                                                            month: "short",
+                                                            day: "numeric",
+                                                            year: "numeric",
+                                                        })}
+                                                    </span>
+                                                    {resume.fileSize > 0 && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span>{(resume.fileSize / 1024).toFixed(0)} KB</span>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Highlighted Skills (5 to 7) */}
+                                                {highlightedSkills.length > 0 && (
+                                                    <div className="mt-3.5">
+                                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                                                            Highlighted Skills ({highlightedSkills.length})
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1.5 max-w-full">
+                                                            {highlightedSkills.map((skill, idx) => (
+                                                                <span
+                                                                    key={`${skill}-${idx}`}
+                                                                    className="inline-block whitespace-normal break-words bg-slate-50 text-slate-700 border border-slate-200/80 text-xs font-medium py-1 px-2.5 rounded-lg"
+                                                                >
+                                                                    {skill}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0 pt-2 md:pt-0">
+                                            <Link
+                                                href={`/dashboard/new?resumeId=${resume.id}&mode=RESUME&role=${encodeURIComponent(resume.parsedRole || "")}&exp=${resume.experience || "1"}`}
+                                            >
+                                                <Button
+                                                    size="sm"
+                                                    className="h-9 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+                                                >
+                                                    Start Interview
+                                                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                                                </Button>
+                                            </Link>
+                                            <Link href="/resume">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 px-3 text-xs text-slate-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl cursor-pointer"
+                                                >
+                                                    View Details
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

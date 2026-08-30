@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { BrainCircuit, Menu, X, LayoutDashboard, FileText, HelpCircle } from "lucide-react";
+import { BrainCircuit, Menu, X, LayoutDashboard, FileText, HelpCircle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 export default function Navbar() {
@@ -72,6 +72,15 @@ export default function Navbar() {
                                 >
                                     <HelpCircle className="h-4 w-4 text-indigo-600" />
                                     Support
+                                </Button>
+                            </Link>
+                            <Link href="/admin/inquiries">
+                                <Button
+                                    variant="ghost"
+                                    className="text-sm font-semibold text-purple-700 hover:text-purple-800 hover:bg-purple-50 flex items-center gap-1.5"
+                                >
+                                    <ShieldCheck className="h-4 w-4 text-purple-600" />
+                                    Admin
                                 </Button>
                             </Link>
                             <UserButton
@@ -142,6 +151,14 @@ export default function Navbar() {
                             >
                                 <HelpCircle className="h-4 w-4 text-indigo-600" />
                                 Support & Inquiries
+                            </Link>
+                            <Link
+                                href="/admin/inquiries"
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-purple-700 hover:text-purple-800 rounded-lg hover:bg-purple-50"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <ShieldCheck className="h-4 w-4 text-purple-600" />
+                                Admin Portal
                             </Link>
                             <div className="px-3 py-2">
                                 <UserButton afterSignOutUrl="/" />

@@ -1,40 +1,43 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 
-/**
- * Checks whether the currently authenticated Clerk user has admin privileges.
- * An admin is identified by matching their email against the comma-separated ADMIN_EMAILS env variable.
- * In development mode, if ADMIN_EMAILS is not yet configured, any logged-in user is granted access for testing.
- */
+/*Checks whether the currently authenticated Clerk user has admin privileges. */
+
 export async function checkIsAdmin(): Promise<boolean> {
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
     if (!userId) return false;
 
-    const user = await currentUser();
-    if (!user) return false;
-
-    const adminEmailsConfig = process.env.ADMIN_EMAILS || "";
-    const adminEmails = adminEmailsConfig
-        .split(",")
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-
-    const userEmail = user.primaryEmailAddress?.emailAddress?.toLowerCase();
-
-    // If configured in env, verify email match
-    if (adminEmails.length > 0) {
-        return Boolean(userEmail && adminEmails.includes(userEmail));
-    }
-
-    // Development fallback so user can immediately test locally without manual env setup
-    if (process.env.NODE_ENV === "development") {
+    // 1. Primary Production Check: Clerk Session Claims (Public Metadata)
+    const userRole = sessionClaims?.metadata?.role;
+    if (userRole === "admin") {
         return true;
     }
+    
+
+    // 2. Secondary Fallback Check: ADMIN_EMAILS env variable
+    // const adminEmailsConfig = process.env.ADMIN_EMAILS || "";
+    // const adminEmails = adminEmailsConfig
+    //     .split(",")
+    //     .map((e) => e.trim().toLowerCase())
+    //     .filter(Boolean);
+
+    // if (adminEmails.length > 0) {
+    //     const user = await currentUser();
+    //     const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
+    //     if (userEmail && adminEmails.includes(userEmail)) {
+    //         return true;
+    //     }
+    // }
+
+    // 3. Local Development fallback (when no admin is configured at all)
+    // if (process.env.NODE_ENV === "development" && adminEmails.length === 0 && !userRole) {
+    //     return true;
+    // }
 
     return false;
 }
 
 /**
- * Returns admin metadata for stamping replies and audits.
+ * Returns admin metadata for stamping official replies.
  */
 export async function getAdminProfile(): Promise<{
     isAdmin: boolean;

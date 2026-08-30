@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import ScoreCircle from "@/components/feedback/ScoreCircle";
 import RadarChartComponent from "@/components/feedback/RadarChartComponent";
 import QuestionAccordion from "@/components/feedback/QuestionAccordion";
+import SubmitInquiryModal from "@/components/inquiry/SubmitInquiryModal";
 import {
     ArrowLeft,
     Loader2,
@@ -15,6 +16,7 @@ import {
     AlertTriangle,
     RotateCcw,
     Download,
+    MessageSquarePlus,
 } from "lucide-react";
 
 interface Feedback {
@@ -47,6 +49,7 @@ export default function FeedbackPage() {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
 
     useEffect(() => {
         generateFeedback();
@@ -207,6 +210,25 @@ export default function FeedbackPage() {
                 <QuestionAccordion questions={feedback.questionFeedback} />
             </div>
 
+            {/* Support & Admin Inquiry Banner */}
+            <div className="bg-gradient-to-r from-purple-50 via-indigo-50/60 to-purple-50 border border-purple-100 rounded-2xl p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+                <div className="space-y-1 text-center sm:text-left">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center justify-center sm:justify-start gap-2">
+                        <MessageSquarePlus className="h-5 w-5 text-purple-600" />
+                        Have questions or feedback about this evaluation?
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                        Ask our admin team about your scoring or suggest improvements. Replies will appear privately in your User Dashboard.
+                    </p>
+                </div>
+                <Button
+                    onClick={() => setIsInquiryModalOpen(true)}
+                    className="h-10 px-5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shadow-xs cursor-pointer shrink-0"
+                >
+                    Ask Admin / Feedback
+                </Button>
+            </div>
+
             {/* Actions */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-8 border-t border-slate-100">
                 <Link href="/dashboard/new">
@@ -221,6 +243,13 @@ export default function FeedbackPage() {
                     </Button>
                 </Link>
             </div>
+
+            <SubmitInquiryModal
+                isOpen={isInquiryModalOpen}
+                onClose={() => setIsInquiryModalOpen(false)}
+                mockInterviewId={interviewId}
+                initialCategory="INTERVIEW_FEEDBACK"
+            />
         </div>
     );
 }

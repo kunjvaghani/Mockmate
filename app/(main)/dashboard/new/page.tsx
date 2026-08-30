@@ -80,6 +80,7 @@ function NewInterviewForm() {
 
         if (role || desc || exp) {
             setFormData((prev) => ({
+                ...prev,
                 jobRole: role ?? prev.jobRole,
                 jobDesc: desc ?? prev.jobDesc,
                 jobExperience: exp ?? prev.jobExperience ?? "1",
@@ -195,6 +196,7 @@ function NewInterviewForm() {
         setInterviewMode(mode);
         if (mode === "RESUME" && activeResume) {
             setFormData((prev) => ({
+                ...prev,
                 jobRole: prev.jobRole || activeResume.parsedRole || "Software Engineer",
                 jobDesc:
                     prev.jobDesc ||

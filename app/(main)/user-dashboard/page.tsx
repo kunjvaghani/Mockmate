@@ -2,11 +2,13 @@
 
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import SubmitInquiryModal from "@/components/inquiry/SubmitInquiryModal";
 import {
     ResponsiveContainer,
     AreaChart,
@@ -38,6 +40,9 @@ import {
     FileText,
     FileUp,
     CheckCircle2,
+    HelpCircle,
+    MessageSquarePlus,
+    ShieldCheck,
 } from "lucide-react";
 
 interface Interview {
@@ -63,6 +68,19 @@ interface ResumeInfo {
     projectsJson?: string;
     createdAt: string;
     updatedAt: string;
+}
+
+interface UserInquiryItem {
+    id: string;
+    subject: string;
+    message: string;
+    category: string;
+    status: string;
+    mockInterviewId?: string | null;
+    adminReply?: string | null;
+    adminRepliedAt?: string | null;
+    adminName?: string | null;
+    createdAt: string;
 }
 
 function formatDuration(seconds?: number | null): string | null {
@@ -91,24 +109,43 @@ function getFeedbackScore(interview: Interview): number | null {
     }
 }
 
-type SidebarTab = "interviews" | "feedbacks" | "analysis" | "resumes" | "settings";
+type SidebarTab = "interviews" | "feedbacks" | "analysis" | "resumes" | "support" | "settings";
 
 const sidebarItems: { key: SidebarTab; label: string; icon: React.ElementType; description: string }[] = [
     { key: "interviews", label: "Interviews", icon: Mic, description: "Your interview sessions" },
     { key: "feedbacks", label: "Feedbacks", icon: MessageSquare, description: "AI-generated feedback" },
     { key: "analysis", label: "Analysis", icon: BarChart3, description: "Performance analytics" },
     { key: "resumes", label: "Resume Info", icon: FileText, description: "Uploaded resumes & skills" },
+    { key: "support", label: "Support & Inquiries", icon: HelpCircle, description: "Ask admin & view replies" },
     { key: "settings", label: "Settings", icon: Settings, description: "Account preferences" },
 ];
 
-export default function UserDashboardPage() {
+function UserDashboardContent() {
     const { user } = useUser();
-    const [activeTab, setActiveTab] = useState<SidebarTab>("interviews");
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get("tab") as SidebarTab;
+
+    const [activeTab, setActiveTab] = useState<SidebarTab>(
+        tabParam && ["interviews", "feedbacks", "analysis", "resumes", "support", "settings"].includes(tabParam)
+            ? tabParam
+            : "interviews"
+    );
+
     const [interviews, setInterviews] = useState<Interview[]>([]);
     const [resumes, setResumes] = useState<ResumeInfo[]>([]);
+    const [inquiries, setInquiries] = useState<UserInquiryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingResumes, setLoadingResumes] = useState(true);
+    const [loadingInquiries, setLoadingInquiries] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+
+    useEffect(() => {
+        const tab = searchParams.get("tab") as SidebarTab;
+        if (tab && ["interviews", "feedbacks", "analysis", "resumes", "support", "settings"].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
 
     const handleDeleteInterview = async (interviewId: string) => {
         const confirmed = window.confirm("Are you sure you want to delete this interview? This will permanently delete the interview and all associated answers.");
@@ -131,6 +168,21 @@ export default function UserDashboardPage() {
             setDeletingId(null);
         }
     };
+
+    async function fetchInquiries() {
+        setLoadingInquiries(true);
+        try {
+            const res = await fetch("/api/inquiries");
+            if (res.ok) {
+                const data = await res.json();
+                setInquiries(data.inquiries || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch inquiries:", err);
+        } finally {
+            setLoadingInquiries(false);
+        }
+    }
 
     useEffect(() => {
         async function fetchInterviews() {
@@ -164,6 +216,7 @@ export default function UserDashboardPage() {
 
         fetchInterviews();
         fetchResumes();
+        fetchInquiries();
     }, []);
 
     const totalInterviews = interviews.length;
@@ -249,6 +302,13 @@ export default function UserDashboardPage() {
                     {activeTab === "resumes" && (
                         <ResumeInfoPanel resumes={resumes} loading={loadingResumes} />
                     )}
+                    {activeTab === "support" && (
+                        <InquiriesPanel
+                            inquiries={inquiries}
+                            loading={loadingInquiries}
+                            onOpenModal={() => setIsInquiryModalOpen(true)}
+                        />
+                    )}
                     {activeTab === "settings" && (
                         <SettingsPanel
                             user={user}
@@ -259,7 +319,27 @@ export default function UserDashboardPage() {
                     )}
                 </main>
             </div>
+
+            <SubmitInquiryModal
+                isOpen={isInquiryModalOpen}
+                onClose={() => setIsInquiryModalOpen(false)}
+                onSuccess={fetchInquiries}
+            />
         </div>
+    );
+}
+
+export default function UserDashboardPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex items-center justify-center min-h-[50vh]">
+                    <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
+                </div>
+            }
+        >
+            <UserDashboardContent />
+        </Suspense>
     );
 }
 
@@ -787,6 +867,188 @@ function ResumeInfoPanel({
                                             </Link>
                                         </div>
                                     </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ─── INQUIRIES & SUPPORT PANEL ───────────────────────────────────── */
+function InquiriesPanel({
+    inquiries,
+    loading,
+    onOpenModal,
+}: {
+    inquiries: UserInquiryItem[];
+    loading: boolean;
+    onOpenModal: () => void;
+}) {
+    const categoryLabels: Record<string, string> = {
+        INTERVIEW_FEEDBACK: "Interview Feedback",
+        FEATURE_REQUEST: "Feature Request",
+        BUG_REPORT: "Bug Report",
+        GENERAL_QUESTION: "General Question",
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case "RESOLVED":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        Resolved / Replied
+                    </span>
+                );
+            case "IN_PROGRESS":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                        In Progress
+                    </span>
+                );
+            case "CLOSED":
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                        Closed
+                    </span>
+                );
+            case "PENDING":
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                        Pending Review
+                    </span>
+                );
+        }
+    };
+
+    return (
+        <div>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-900">Support & Inquiries</h2>
+                    <p className="text-sm text-slate-500 mt-0.5">
+                        Ask questions about your evaluations, report bugs, or suggest improvements.
+                    </p>
+                </div>
+                <Button
+                    onClick={onOpenModal}
+                    className="h-10 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-semibold shadow-md shadow-purple-200 cursor-pointer flex items-center gap-2 shrink-0"
+                >
+                    <MessageSquarePlus className="h-4 w-4" />
+                    Ask Question / Feedback
+                </Button>
+            </div>
+
+            {loading ? (
+                <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                        <Card key={i} className="rounded-2xl border-slate-100 shadow-sm p-6 space-y-3">
+                            <Skeleton className="h-6 w-1/3 rounded-lg" />
+                            <Skeleton className="h-4 w-1/4 rounded-lg" />
+                            <Skeleton className="h-16 w-full rounded-xl" />
+                        </Card>
+                    ))}
+                </div>
+            ) : inquiries.length === 0 ? (
+                <Card className="rounded-2xl border-dashed border-slate-200 p-12 text-center">
+                    <div className="mx-auto h-12 w-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                        <HelpCircle className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">No inquiries submitted yet</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-5">
+                        Have a question about an interview evaluation, scoring, or want to suggest an improvement? Send a message directly to our admin team.
+                    </p>
+                    <Button
+                        onClick={onOpenModal}
+                        size="sm"
+                        className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium cursor-pointer"
+                    >
+                        <MessageSquarePlus className="h-3.5 w-3.5 mr-1.5" />
+                        Ask Your First Question
+                    </Button>
+                </Card>
+            ) : (
+                <div className="space-y-5">
+                    {inquiries.map((item) => {
+                        const formattedDate = new Date(item.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                        });
+
+                        return (
+                            <Card
+                                key={item.id}
+                                className="rounded-2xl border-slate-200/80 shadow-xs hover:shadow-md transition-all overflow-hidden"
+                            >
+                                <CardContent className="p-5 sm:p-6 space-y-4">
+                                    {/* Top Bar */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <Badge className="bg-purple-50 text-purple-700 hover:bg-purple-50 border-0 text-[11px] font-semibold">
+                                                    {categoryLabels[item.category] || item.category}
+                                                </Badge>
+                                                {item.mockInterviewId && (
+                                                    <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                                        Interview: {item.mockInterviewId.slice(-6)}
+                                                    </span>
+                                                )}
+                                                <span className="text-xs text-slate-400">
+                                                    Submitted on {formattedDate}
+                                                </span>
+                                            </div>
+                                            <h3 className="text-base font-bold text-slate-900 pt-0.5">
+                                                {item.subject}
+                                            </h3>
+                                        </div>
+                                        <div className="shrink-0">
+                                            {getStatusBadge(item.status)}
+                                        </div>
+                                    </div>
+
+                                    {/* User Message */}
+                                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                        {item.message}
+                                    </div>
+
+                                    {/* Admin Official Reply (if any) */}
+                                    {item.adminReply ? (
+                                        <div className="bg-gradient-to-br from-indigo-50/70 via-purple-50/50 to-white border border-purple-200 rounded-xl p-4 sm:p-5 space-y-2 mt-2">
+                                            <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-purple-100">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-purple-900">
+                                                    <ShieldCheck className="h-4 w-4 text-purple-600" />
+                                                    <span>Admin Response • {item.adminName || "MockMate Support"}</span>
+                                                </div>
+                                                {item.adminRepliedAt && (
+                                                    <span className="text-[11px] text-purple-600 font-medium">
+                                                        Replied on{" "}
+                                                        {new Date(item.adminRepliedAt).toLocaleDateString("en-US", {
+                                                            month: "short",
+                                                            day: "numeric",
+                                                            year: "numeric",
+                                                        })}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-medium text-slate-800 leading-relaxed whitespace-pre-wrap pt-1">
+                                                {item.adminReply}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-xs text-slate-400 italic pt-1">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            <span>Waiting for an administrator to review and reply. You will see the answer here.</span>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         );

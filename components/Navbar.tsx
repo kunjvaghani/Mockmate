@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { BrainCircuit, Menu, X, LayoutDashboard, FileText } from "lucide-react";
+import { BrainCircuit, Menu, X, LayoutDashboard, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function Navbar() {
@@ -63,6 +63,15 @@ export default function Navbar() {
                                 >
                                     <LayoutDashboard className="h-4 w-4" />
                                     User Dashboard
+                                </Button>
+                            </Link>
+                            <Link href="/user-dashboard?tab=support">
+                                <Button
+                                    variant="ghost"
+                                    className="text-sm font-medium text-slate-600 hover:text-indigo-600 flex items-center gap-1.5"
+                                >
+                                    <HelpCircle className="h-4 w-4 text-indigo-600" />
+                                    Support
                                 </Button>
                             </Link>
                             <UserButton
@@ -125,6 +134,14 @@ export default function Navbar() {
                             >
                                 <LayoutDashboard className="h-4 w-4" />
                                 User Dashboard
+                            </Link>
+                            <Link
+                                href="/user-dashboard?tab=support"
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 rounded-lg hover:bg-indigo-50"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <HelpCircle className="h-4 w-4 text-indigo-600" />
+                                Support & Inquiries
                             </Link>
                             <div className="px-3 py-2">
                                 <UserButton afterSignOutUrl="/" />

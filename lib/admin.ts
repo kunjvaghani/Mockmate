@@ -6,34 +6,9 @@ export async function checkIsAdmin(): Promise<boolean> {
     const { userId, sessionClaims } = await auth();
     if (!userId) return false;
 
-    // 1. Primary Production Check: Clerk Session Claims (Public Metadata)
+    // Primary Production Check: Clerk Session Claims (Public Metadata)
     const userRole = sessionClaims?.metadata?.role;
-    if (userRole === "admin") {
-        return true;
-    }
-    
-
-    // 2. Secondary Fallback Check: ADMIN_EMAILS env variable
-    // const adminEmailsConfig = process.env.ADMIN_EMAILS || "";
-    // const adminEmails = adminEmailsConfig
-    //     .split(",")
-    //     .map((e) => e.trim().toLowerCase())
-    //     .filter(Boolean);
-
-    // if (adminEmails.length > 0) {
-    //     const user = await currentUser();
-    //     const userEmail = user?.primaryEmailAddress?.emailAddress?.toLowerCase();
-    //     if (userEmail && adminEmails.includes(userEmail)) {
-    //         return true;
-    //     }
-    // }
-
-    // 3. Local Development fallback (when no admin is configured at all)
-    // if (process.env.NODE_ENV === "development" && adminEmails.length === 0 && !userRole) {
-    //     return true;
-    // }
-
-    return false;
+    return userRole === "admin";
 }
 
 /**

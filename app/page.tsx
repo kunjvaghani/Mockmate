@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import HeroDecorations from "@/components/hero/HeroDecorations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -57,12 +58,8 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-6 pb-12 sm:pt-10 sm:pb-16 lg:pt-12 lg:pb-18">
-        {/* Background ambient glow meshes */}
-        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-gradient-to-br from-indigo-200/25 via-purple-200/20 to-transparent rounded-full blur-3xl -translate-y-1/3" />
-          <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-gradient-to-br from-purple-200/20 to-transparent rounded-full blur-3xl" />
-          <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
-        </div>
+        {/* Ambient background & floating 3D cubes composition */}
+        <HeroDecorations />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div

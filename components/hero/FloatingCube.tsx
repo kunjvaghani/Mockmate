@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 
 export interface FloatingCubeProps {
   size?: number; // Size in pixels
@@ -28,7 +28,7 @@ export default function FloatingCube({
   const half = size / 2;
 
   // Keyframes for continuous 3D rotation (lightweight, GPU-friendly)
-  const rotationVariants = {
+  const rotationVariants: Variants = {
     animate: {
       rotateX: reverse
         ? [initialRotation.x, initialRotation.x - 360]
@@ -40,19 +40,19 @@ export default function FloatingCube({
       transition: {
         duration: rotateDuration,
         repeat: Infinity,
-        ease: "linear",
+        ease: "linear" as const,
       },
     },
   };
 
   // Gentle floating animation
-  const floatVariants = {
+  const floatVariants: Variants = {
     animate: {
       y: [0, -floatOffset, 0],
       transition: {
         duration: floatDuration,
         repeat: Infinity,
-        ease: "easeInOut",
+        ease: "easeInOut" as const,
       },
     },
   };
